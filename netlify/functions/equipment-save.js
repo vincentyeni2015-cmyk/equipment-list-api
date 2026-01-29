@@ -67,9 +67,11 @@ async function saveToShopify(customerId, equipmentData) {
     }
   }`;
 
+  const customerId_gid = "gid://shopify/Customer/" + customerId;
+
   const variables = {
     input: {
-      id: \`gid://shopify/Customer/\${customerId}\`,
+      id: customerId_gid,
       metafields: [{
         namespace: 'custom',
         key: 'equipment_list',
@@ -80,7 +82,8 @@ async function saveToShopify(customerId, equipmentData) {
   };
 
   try {
-    const res = await fetch(\`https://\${STORE}/admin/api/2024-01/graphql.json\`, {
+    const url = "https://" + STORE + "/admin/api/2024-01/graphql.json";
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': TOKEN },
       body: JSON.stringify({ query, variables })
