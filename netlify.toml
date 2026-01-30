@@ -16,18 +16,3 @@
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Headers = "Content-Type"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-```
-
-**2. Create `public` folder** and add `admin.html` inside it
-
-**3. Replace `netlify/functions/equipment-save.js`** with the new version
-
-Your repo structure should look like:
-```
-equipment-list-api/
-├── netlify.toml
-├── public/
-│   └── admin.html
-└── netlify/
-    └── functions/
-        └── equipment-save.js
