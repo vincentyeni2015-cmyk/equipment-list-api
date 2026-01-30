@@ -265,25 +265,30 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Make *</label>
-                <select id="editHdMake"><option value="">Select Make</option></select>
+                <input type="text" id="editHdMake" list="hdMakeList" placeholder="Select or type Make">
+                <datalist id="hdMakeList"></datalist>
               </div>
               <div class="form-group">
                 <label>Type *</label>
-                <select id="editHdType" disabled><option value="">Select Type</option></select>
+                <input type="text" id="editHdType" list="hdTypeList" placeholder="Select or type Type">
+                <datalist id="hdTypeList"></datalist>
               </div>
             </div>
             <div class="form-group" id="hdSubmodelGroup" style="display:none">
               <label>Sub-Model</label>
-              <select id="editHdSubmodel" disabled><option value="">Select Sub-Model</option></select>
+              <input type="text" id="editHdSubmodel" list="hdSubmodelList" placeholder="Select or type Sub-Model">
+              <datalist id="hdSubmodelList"></datalist>
             </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Model *</label>
-                <select id="editHdModel" disabled><option value="">Select Model</option></select>
+                <input type="text" id="editHdModel" list="hdModelList" placeholder="Select or type Model">
+                <datalist id="hdModelList"></datalist>
               </div>
               <div class="form-group">
                 <label>Variant</label>
-                <select id="editHdVariant" disabled><option value="">Select Variant</option></select>
+                <input type="text" id="editHdVariant" list="hdVariantList" placeholder="Select or type Variant">
+                <datalist id="hdVariantList"></datalist>
               </div>
             </div>
           </div>
@@ -293,26 +298,31 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Year *</label>
-                <select id="editAutoYear"><option value="">Select Year</option></select>
+                <input type="text" id="editAutoYear" list="autoYearList" placeholder="Select or type Year">
+                <datalist id="autoYearList"></datalist>
               </div>
               <div class="form-group">
                 <label>Make *</label>
-                <select id="editAutoMake" disabled><option value="">Select Make</option></select>
+                <input type="text" id="editAutoMake" list="autoMakeList" placeholder="Select or type Make">
+                <datalist id="autoMakeList"></datalist>
               </div>
             </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Model *</label>
-                <select id="editAutoModel" disabled><option value="">Select Model</option></select>
+                <input type="text" id="editAutoModel" list="autoModelList" placeholder="Select or type Model">
+                <datalist id="autoModelList"></datalist>
               </div>
               <div class="form-group">
                 <label>Trim</label>
-                <select id="editAutoTrim" disabled><option value="">Select Trim</option></select>
+                <input type="text" id="editAutoTrim" list="autoTrimList" placeholder="Select or type Trim">
+                <datalist id="autoTrimList"></datalist>
               </div>
             </div>
             <div class="form-group">
               <label>Engine</label>
-              <select id="editAutoEngine" disabled><option value="">Select Engine</option></select>
+              <input type="text" id="editAutoEngine" list="autoEngineList" placeholder="Select or type Engine">
+              <datalist id="autoEngineList"></datalist>
             </div>
           </div>
 
@@ -497,6 +507,17 @@
       return [...new Set(filtered.map(item => item[key]).filter(Boolean))].sort();
     }
 
+    function populateDatalist(datalistId, options) {
+      const datalist = document.getElementById(datalistId);
+      if (!datalist) return;
+      datalist.innerHTML = '';
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        datalist.appendChild(option);
+      });
+    }
+
     function populateSelect(selectEl, options, placeholder, currentValue = '') {
       if (!selectEl) return;
       selectEl.innerHTML = '<option value="">' + placeholder + '</option>';
@@ -526,38 +547,46 @@
       
       if (changedField === 'make') {
         const types = getUniqueValues(matrixData.heavyDuty, 'type', { make: filters.make });
-        populateSelect(hdType, types, 'Select Type');
-        populateSelect(hdSubmodel, [], 'Select Sub-Model');
-        populateSelect(hdModel, [], 'Select Model');
-        populateSelect(hdVariant, [], 'Select Variant');
-        if (submodelGroup) submodelGroup.style.display = 'none';
+        populateDatalist('hdTypeList', types);
+        populateDatalist('hdSubmodelList', []);
+        populateDatalist('hdModelList', []);
+        populateDatalist('hdVariantList', []);
+        hdType.value = '';
+        hdSubmodel.value = '';
+        hdModel.value = '';
+        hdVariant.value = '';
       }
       
       if (changedField === 'make' || changedField === 'type') {
         if (filters.type) {
           const submodels = getUniqueValues(matrixData.heavyDuty, 'submodel', { make: filters.make, type: filters.type });
-          if (submodels.length > 0) {
-            if (submodelGroup) submodelGroup.style.display = 'block';
-            populateSelect(hdSubmodel, submodels, 'Select Sub-Model');
-          } else {
-            if (submodelGroup) submodelGroup.style.display = 'none';
-          }
+          populateDatalist('hdSubmodelList', submodels);
           const models = getUniqueValues(matrixData.heavyDuty, 'model', { make: filters.make, type: filters.type });
-          populateSelect(hdModel, models, 'Select Model');
-          populateSelect(hdVariant, [], 'Select Variant');
+          populateDatalist('hdModelList', models);
+          populateDatalist('hdVariantList', []);
+          if (changedField === 'type') {
+            hdSubmodel.value = '';
+            hdModel.value = '';
+            hdVariant.value = '';
+          }
         }
       }
       
       if (changedField === 'submodel') {
         const models = getUniqueValues(matrixData.heavyDuty, 'model', { make: filters.make, type: filters.type, submodel: filters.submodel });
-        populateSelect(hdModel, models, 'Select Model');
-        populateSelect(hdVariant, [], 'Select Variant');
+        populateDatalist('hdModelList', models);
+        populateDatalist('hdVariantList', []);
+        hdModel.value = '';
+        hdVariant.value = '';
       }
       
       if (changedField === 'submodel' || changedField === 'model') {
         if (filters.model) {
           const variants = getUniqueValues(matrixData.heavyDuty, 'variant', filters);
-          populateSelect(hdVariant, variants, 'Select Variant');
+          populateDatalist('hdVariantList', variants);
+          if (changedField === 'model') {
+            hdVariant.value = '';
+          }
         }
       }
     }
@@ -580,18 +609,27 @@
       
       if (changedField === 'year') {
         const makes = getUniqueValues(data, 'make', { year: filters.year });
-        populateSelect(autoMake, makes, 'Select Make');
-        populateSelect(autoModel, [], 'Select Model');
-        populateSelect(autoTrim, [], 'Select Trim');
-        populateSelect(autoEngine, [], 'Select Engine');
+        populateDatalist('autoMakeList', makes);
+        populateDatalist('autoModelList', []);
+        populateDatalist('autoTrimList', []);
+        populateDatalist('autoEngineList', []);
+        autoMake.value = '';
+        autoModel.value = '';
+        autoTrim.value = '';
+        autoEngine.value = '';
       }
       
       if (changedField === 'year' || changedField === 'make') {
         if (filters.make) {
           const models = getUniqueValues(data, 'model', { year: filters.year, make: filters.make });
-          populateSelect(autoModel, models, 'Select Model');
-          populateSelect(autoTrim, [], 'Select Trim');
-          populateSelect(autoEngine, [], 'Select Engine');
+          populateDatalist('autoModelList', models);
+          populateDatalist('autoTrimList', []);
+          populateDatalist('autoEngineList', []);
+          if (changedField === 'make') {
+            autoModel.value = '';
+            autoTrim.value = '';
+            autoEngine.value = '';
+          }
         }
       }
       
@@ -599,14 +637,17 @@
         if (filters.model) {
           const trims = getUniqueValues(data, 'trim', { year: filters.year, make: filters.make, model: filters.model });
           const engines = getUniqueValues(data, 'engine', { year: filters.year, make: filters.make, model: filters.model });
-          populateSelect(autoTrim, trims, trims.length ? 'Select Trim' : 'No Trims Available');
-          populateSelect(autoEngine, engines, 'Select Engine');
+          populateDatalist('autoTrimList', trims);
+          populateDatalist('autoEngineList', engines);
+          autoTrim.value = '';
+          autoEngine.value = '';
         }
       }
       
       if (changedField === 'trim') {
         const engines = getUniqueValues(data, 'engine', filters);
-        populateSelect(autoEngine, engines, 'Select Engine');
+        populateDatalist('autoEngineList', engines);
+        autoEngine.value = '';
       }
     }
 
@@ -656,17 +697,17 @@
       document.getElementById('editModal').onclick = e => { if (e.target.id === 'editModal') closeEditModal(); };
       document.getElementById('editCategory').onchange = handleCategoryChange;
       
-      // HD Cascading
-      document.getElementById('editHdMake').onchange = () => updateHDDropdowns('make');
-      document.getElementById('editHdType').onchange = () => updateHDDropdowns('type');
-      document.getElementById('editHdSubmodel').onchange = () => updateHDDropdowns('submodel');
-      document.getElementById('editHdModel').onchange = () => updateHDDropdowns('model');
+      // HD Cascading - use change event for datalist inputs
+      document.getElementById('editHdMake').addEventListener('change', () => updateHDDropdowns('make'));
+      document.getElementById('editHdType').addEventListener('change', () => updateHDDropdowns('type'));
+      document.getElementById('editHdSubmodel').addEventListener('change', () => updateHDDropdowns('submodel'));
+      document.getElementById('editHdModel').addEventListener('change', () => updateHDDropdowns('model'));
       
       // Auto Cascading
-      document.getElementById('editAutoYear').onchange = () => updateAutoDropdowns('year');
-      document.getElementById('editAutoMake').onchange = () => updateAutoDropdowns('make');
-      document.getElementById('editAutoModel').onchange = () => updateAutoDropdowns('model');
-      document.getElementById('editAutoTrim').onchange = () => updateAutoDropdowns('trim');
+      document.getElementById('editAutoYear').addEventListener('change', () => updateAutoDropdowns('year'));
+      document.getElementById('editAutoMake').addEventListener('change', () => updateAutoDropdowns('make'));
+      document.getElementById('editAutoModel').addEventListener('change', () => updateAutoDropdowns('model'));
+      document.getElementById('editAutoTrim').addEventListener('change', () => updateAutoDropdowns('trim'));
       
       // Delete Modal
       document.getElementById('closeDeleteModal').onclick = closeDeleteModal;
@@ -835,25 +876,38 @@
         // Populate makes
         if (matrixLoaded) {
           const makes = getUniqueValues(matrixData.heavyDuty, 'make');
-          populateSelect(document.getElementById('editHdMake'), makes, 'Select Make');
+          populateDatalist('hdMakeList', makes);
         }
-        populateSelect(document.getElementById('editHdType'), [], 'Select Type');
-        populateSelect(document.getElementById('editHdSubmodel'), [], 'Select Sub-Model');
-        populateSelect(document.getElementById('editHdModel'), [], 'Select Model');
-        populateSelect(document.getElementById('editHdVariant'), [], 'Select Variant');
-        if (submodelGroup) submodelGroup.style.display = 'none';
+        // Clear all fields
+        document.getElementById('editHdMake').value = '';
+        document.getElementById('editHdType').value = '';
+        document.getElementById('editHdSubmodel').value = '';
+        document.getElementById('editHdModel').value = '';
+        document.getElementById('editHdVariant').value = '';
+        populateDatalist('hdTypeList', []);
+        populateDatalist('hdSubmodelList', []);
+        populateDatalist('hdModelList', []);
+        populateDatalist('hdVariantList', []);
+        // Always show submodel for custom entry
+        if (submodelGroup) submodelGroup.style.display = 'block';
       } else if (category === 'Trucks' || category === 'Automotive') {
         autoFields.classList.add('show');
         // Populate years
         if (matrixLoaded) {
           const data = category === 'Trucks' ? matrixData.trucks : matrixData.automotive;
           const years = getUniqueValues(data, 'year');
-          populateSelect(document.getElementById('editAutoYear'), years, 'Select Year');
+          populateDatalist('autoYearList', years);
         }
-        populateSelect(document.getElementById('editAutoMake'), [], 'Select Make');
-        populateSelect(document.getElementById('editAutoModel'), [], 'Select Model');
-        populateSelect(document.getElementById('editAutoTrim'), [], 'Select Trim');
-        populateSelect(document.getElementById('editAutoEngine'), [], 'Select Engine');
+        // Clear all fields
+        document.getElementById('editAutoYear').value = '';
+        document.getElementById('editAutoMake').value = '';
+        document.getElementById('editAutoModel').value = '';
+        document.getElementById('editAutoTrim').value = '';
+        document.getElementById('editAutoEngine').value = '';
+        populateDatalist('autoMakeList', []);
+        populateDatalist('autoModelList', []);
+        populateDatalist('autoTrimList', []);
+        populateDatalist('autoEngineList', []);
       }
       
       updateDataStatusIndicator();
@@ -864,11 +918,11 @@
       if (!indicator) return;
       
       if (matrixLoaded) {
-        indicator.innerHTML = '<div class="data-status loaded">✅ Dropdown data loaded - select from options</div>';
+        indicator.innerHTML = '<div class="data-status loaded">✅ Dropdown suggestions loaded - select from list or type custom values</div>';
       } else if (config.productDataUrl) {
-        indicator.innerHTML = '<div class="data-status error">⚠️ Product data not loaded - <a href="#" onclick="loadMatrixData();return false;">click to load</a></div>';
+        indicator.innerHTML = '<div class="data-status error">⚠️ Product data not loaded - <a href="#" onclick="loadMatrixData();return false;">click to load</a> or type custom values</div>';
       } else {
-        indicator.innerHTML = '<div class="data-status error">ℹ️ No product data URL configured - using manual entry</div>';
+        indicator.innerHTML = '<div class="data-status" style="background:#f9fafb;color:#6b7280">ℹ️ No product data URL configured - enter values manually</div>';
       }
     }
 
@@ -905,29 +959,29 @@
         
         if (isHD) {
           hdFields.classList.add('show');
+          // Always show submodel field
+          if (submodelGroup) submodelGroup.style.display = 'block';
           if (matrixLoaded) {
             populateHDDropdownsForEdit(m);
           } else {
-            // Fallback to single option with current value
-            populateSelect(document.getElementById('editHdMake'), m.make ? [m.make] : [], 'Select Make', m.make);
-            populateSelect(document.getElementById('editHdType'), m.type ? [m.type] : [], 'Select Type', m.type);
-            if (m.submodel) {
-              if (submodelGroup) submodelGroup.style.display = 'block';
-              populateSelect(document.getElementById('editHdSubmodel'), [m.submodel], 'Select Sub-Model', m.submodel);
-            }
-            populateSelect(document.getElementById('editHdModel'), m.model ? [m.model] : [], 'Select Model', m.model);
-            populateSelect(document.getElementById('editHdVariant'), m.variant ? [m.variant] : [], 'Select Variant', m.variant);
+            // Set values directly - user can type custom values
+            document.getElementById('editHdMake').value = m.make || '';
+            document.getElementById('editHdType').value = m.type || '';
+            document.getElementById('editHdSubmodel').value = m.submodel || '';
+            document.getElementById('editHdModel').value = m.model || '';
+            document.getElementById('editHdVariant').value = m.variant || '';
           }
         } else {
           autoFields.classList.add('show');
           if (matrixLoaded) {
             populateAutoDropdownsForEdit(m);
           } else {
-            populateSelect(document.getElementById('editAutoYear'), m.year ? [m.year] : [], 'Select Year', m.year);
-            populateSelect(document.getElementById('editAutoMake'), m.make ? [m.make] : [], 'Select Make', m.make);
-            populateSelect(document.getElementById('editAutoModel'), m.model ? [m.model] : [], 'Select Model', m.model);
-            populateSelect(document.getElementById('editAutoTrim'), m.trim ? [m.trim] : [], 'Select Trim', m.trim);
-            populateSelect(document.getElementById('editAutoEngine'), m.engine ? [m.engine] : [], 'Select Engine', m.engine);
+            // Set values directly - user can type custom values
+            document.getElementById('editAutoYear').value = m.year || '';
+            document.getElementById('editAutoMake').value = m.make || '';
+            document.getElementById('editAutoModel').value = m.model || '';
+            document.getElementById('editAutoTrim').value = m.trim || '';
+            document.getElementById('editAutoEngine').value = m.engine || '';
           }
         }
       } else {
@@ -953,38 +1007,62 @@
       const hdVariant = document.getElementById('editHdVariant');
       const submodelGroup = document.getElementById('hdSubmodelGroup');
       
-      populateSelect(hdMake, getUniqueValues(matrixData.heavyDuty, 'make'), 'Select Make', m.make);
+      // Always show submodel field for custom entries
+      if (submodelGroup) submodelGroup.style.display = 'block';
+      
+      // Populate datalists with available options
+      populateDatalist('hdMakeList', getUniqueValues(matrixData.heavyDuty, 'make'));
+      hdMake.value = m.make || '';
+      
       if (m.make) {
-        populateSelect(hdType, getUniqueValues(matrixData.heavyDuty, 'type', { make: m.make }), 'Select Type', m.type);
+        populateDatalist('hdTypeList', getUniqueValues(matrixData.heavyDuty, 'type', { make: m.make }));
+        hdType.value = m.type || '';
       }
+      
       if (m.make && m.type) {
         const submodels = getUniqueValues(matrixData.heavyDuty, 'submodel', { make: m.make, type: m.type });
-        if (submodels.length > 0 || m.submodel) {
-          if (submodelGroup) submodelGroup.style.display = 'block';
-          populateSelect(hdSubmodel, submodels, 'Select Sub-Model', m.submodel);
-        }
+        populateDatalist('hdSubmodelList', submodels);
+        hdSubmodel.value = m.submodel || '';
+        
         const filters = { make: m.make, type: m.type };
         if (m.submodel) filters.submodel = m.submodel;
-        populateSelect(hdModel, getUniqueValues(matrixData.heavyDuty, 'model', filters), 'Select Model', m.model);
+        populateDatalist('hdModelList', getUniqueValues(matrixData.heavyDuty, 'model', filters));
+        hdModel.value = m.model || '';
       }
+      
       if (m.model) {
-        populateSelect(hdVariant, getUniqueValues(matrixData.heavyDuty, 'variant', { make: m.make, type: m.type, model: m.model }), 'Select Variant', m.variant);
+        populateDatalist('hdVariantList', getUniqueValues(matrixData.heavyDuty, 'variant', { make: m.make, type: m.type, model: m.model }));
+        hdVariant.value = m.variant || '';
       }
     }
 
     function populateAutoDropdownsForEdit(m) {
       const data = m.category === 'Trucks' ? matrixData.trucks : matrixData.automotive;
       
-      populateSelect(document.getElementById('editAutoYear'), getUniqueValues(data, 'year'), 'Select Year', m.year);
+      const autoYear = document.getElementById('editAutoYear');
+      const autoMake = document.getElementById('editAutoMake');
+      const autoModel = document.getElementById('editAutoModel');
+      const autoTrim = document.getElementById('editAutoTrim');
+      const autoEngine = document.getElementById('editAutoEngine');
+      
+      populateDatalist('autoYearList', getUniqueValues(data, 'year'));
+      autoYear.value = m.year || '';
+      
       if (m.year) {
-        populateSelect(document.getElementById('editAutoMake'), getUniqueValues(data, 'make', { year: m.year }), 'Select Make', m.make);
+        populateDatalist('autoMakeList', getUniqueValues(data, 'make', { year: m.year }));
+        autoMake.value = m.make || '';
       }
+      
       if (m.make) {
-        populateSelect(document.getElementById('editAutoModel'), getUniqueValues(data, 'model', { year: m.year, make: m.make }), 'Select Model', m.model);
+        populateDatalist('autoModelList', getUniqueValues(data, 'model', { year: m.year, make: m.make }));
+        autoModel.value = m.model || '';
       }
+      
       if (m.model) {
-        populateSelect(document.getElementById('editAutoTrim'), getUniqueValues(data, 'trim', { year: m.year, make: m.make, model: m.model }), 'Select Trim', m.trim);
-        populateSelect(document.getElementById('editAutoEngine'), getUniqueValues(data, 'engine', { year: m.year, make: m.make, model: m.model }), 'Select Engine', m.engine);
+        populateDatalist('autoTrimList', getUniqueValues(data, 'trim', { year: m.year, make: m.make, model: m.model }));
+        populateDatalist('autoEngineList', getUniqueValues(data, 'engine', { year: m.year, make: m.make, model: m.model }));
+        autoTrim.value = m.trim || '';
+        autoEngine.value = m.engine || '';
       }
     }
 
