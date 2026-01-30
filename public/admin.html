@@ -19,9 +19,11 @@
     .config-panel.show{display:block}
     .config-panel h3{margin-bottom:16px;font-size:16px}
     .config-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .config-row.full{grid-template-columns:1fr}
     .config-row label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#666}
     .config-row input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px}
     .config-row input:focus{outline:none;border-color:#F7B910;box-shadow:0 0 0 3px rgba(247,185,16,.15)}
+    .config-row .hint{font-size:11px;color:#9ca3af;margin-top:4px}
     .config-actions{display:flex;gap:10px;margin-top:16px}
     .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:24px}
     .stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.1);position:relative;overflow:hidden}
@@ -79,7 +81,7 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
     .modal-overlay.show{display:flex}
     .modal{background:#fff;border-radius:16px;width:100%;max-width:1100px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,.25)}
-    .modal-sm{max-width:550px}
+    .modal-sm{max-width:600px}
     .modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #eee;background:#f9fafb}
     .modal-header h2{font-size:18px;font-weight:600}
     .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#999;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center}
@@ -99,7 +101,7 @@
     .equipment-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
     .equipment-section-header h4{font-size:16px;font-weight:600}
     .equipment-list-admin{border:1px solid #e5e7eb;border-radius:12px;overflow-x:auto}
-    .equipment-list-admin table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px}
+    .equipment-list-admin table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
     .equipment-list-admin th{text-align:left;padding:12px 10px;background:#f9fafb;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e5e7eb;white-space:nowrap}
     .equipment-list-admin td{padding:10px;border-bottom:1px solid #f3f4f6;vertical-align:middle}
     .equipment-list-admin tr:last-child td{border-bottom:none}
@@ -127,6 +129,7 @@
     .form-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#374151}
     .form-group input,.form-group select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px}
     .form-group input:focus,.form-group select:focus{outline:none;border-color:#F7B910;box-shadow:0 0 0 3px rgba(247,185,16,.15)}
+    .form-group select:disabled{background:#f5f5f5;color:#999;cursor:not-allowed}
     .form-group .hint{font-size:11px;color:#9ca3af;margin-top:4px}
     .form-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
     .form-checkbox{display:flex;align-items:center;gap:8px;cursor:pointer}
@@ -135,6 +138,12 @@
     .import-preview table{width:100%;font-size:12px;border-collapse:collapse}
     .import-preview th,.import-preview td{padding:8px;text-align:left;border-bottom:1px solid #f3f4f6}
     .import-preview th{background:#f9fafb;font-weight:600;position:sticky;top:0}
+    .category-fields{display:none}
+    .category-fields.show{display:block}
+    .data-status{font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .data-status.loaded{background:#ecfdf5;color:#059669}
+    .data-status.error{background:#fef2f2;color:#dc2626}
+    .data-status.loading{background:#eff6ff;color:#2563eb}
     @media(max-width:1024px){.stats-row{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:768px){.admin-container{padding:15px}.header-top{flex-direction:column;gap:12px;text-align:center}.config-row,.stats-row,.form-grid{grid-template-columns:1fr}.search-bar{flex-direction:column}.customer-detail-header{flex-direction:column;text-align:center}.customer-stats{justify-content:center}.modal-footer{flex-direction:column}.modal-footer-left,.modal-footer-right{width:100%;justify-content:center}}
   </style>
@@ -157,9 +166,17 @@
         <div><label>API Endpoint URL</label><input type="text" id="apiEndpoint" placeholder="/.netlify/functions/equipment-save"></div>
         <div><label>Store Domain</label><input type="text" id="storeDomain" placeholder="your-store.myshopify.com"></div>
       </div>
+      <div class="config-row full">
+        <div>
+          <label>Product Data URL (for dropdowns)</label>
+          <input type="text" id="productDataUrl" placeholder="https://your-store.com/products.json or leave blank for manual entry">
+          <div class="hint">URL to load matrix data for cascading dropdowns. Leave blank for manual text entry.</div>
+        </div>
+      </div>
       <div class="config-actions">
         <button class="btn btn-primary" id="saveConfig">💾 Save Configuration</button>
         <button class="btn btn-secondary" id="testConnection">🔗 Test Connection</button>
+        <button class="btn btn-outline" id="loadProductData">📦 Load Product Data</button>
       </div>
     </div>
 
@@ -227,6 +244,7 @@
     <div class="modal modal-sm">
       <div class="modal-header"><h2 id="editModalTitle">✏️ Edit Equipment</h2><button class="modal-close" id="closeEditModal">&times;</button></div>
       <div class="modal-body">
+        <div id="dataStatusIndicator"></div>
         <form id="editForm">
           <div class="form-group">
             <label>SKU/ID *</label>
@@ -235,25 +253,69 @@
           <div class="form-group">
             <label>Category *</label>
             <select id="editCategory" required>
+              <option value="">Select Category</option>
               <option value="Heavy-Duty Machinery">Heavy-Duty Machinery</option>
               <option value="Trucks">Trucks</option>
               <option value="Automotive">Automotive</option>
             </select>
           </div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Make *</label>
-              <input type="text" id="editMake" required placeholder="e.g., Kubota">
+
+          <!-- Heavy-Duty Fields -->
+          <div class="category-fields" id="hdFields">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Make *</label>
+                <select id="editHdMake"><option value="">Select Make</option></select>
+              </div>
+              <div class="form-group">
+                <label>Type *</label>
+                <select id="editHdType" disabled><option value="">Select Type</option></select>
+              </div>
             </div>
-            <div class="form-group">
-              <label id="editTypeYearLabel">Type/Year *</label>
-              <input type="text" id="editTypeYear" required placeholder="e.g., Tractors or 2020">
+            <div class="form-group" id="hdSubmodelGroup" style="display:none">
+              <label>Sub-Model</label>
+              <select id="editHdSubmodel" disabled><option value="">Select Sub-Model</option></select>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Model *</label>
+                <select id="editHdModel" disabled><option value="">Select Model</option></select>
+              </div>
+              <div class="form-group">
+                <label>Variant</label>
+                <select id="editHdVariant" disabled><option value="">Select Variant</option></select>
+              </div>
             </div>
           </div>
-          <div class="form-group">
-            <label>Model *</label>
-            <input type="text" id="editModel" required placeholder="e.g., L3901">
+
+          <!-- Auto/Trucks Fields -->
+          <div class="category-fields" id="autoFields">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Year *</label>
+                <select id="editAutoYear"><option value="">Select Year</option></select>
+              </div>
+              <div class="form-group">
+                <label>Make *</label>
+                <select id="editAutoMake" disabled><option value="">Select Make</option></select>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Model *</label>
+                <select id="editAutoModel" disabled><option value="">Select Model</option></select>
+              </div>
+              <div class="form-group">
+                <label>Trim</label>
+                <select id="editAutoTrim" disabled><option value="">Select Trim</option></select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Engine</label>
+              <select id="editAutoEngine" disabled><option value="">Select Engine</option></select>
+            </div>
           </div>
+
           <div class="form-group">
             <label>Serial # (Optional)</label>
             <input type="text" id="editSerial" placeholder="Serial number">
@@ -293,7 +355,8 @@
     // ========================================
     let config = {
       apiEndpoint: localStorage.getItem('equipmentAdminEndpoint') || '/.netlify/functions/equipment-save',
-      storeDomain: localStorage.getItem('equipmentAdminStore') || ''
+      storeDomain: localStorage.getItem('equipmentAdminStore') || '',
+      productDataUrl: localStorage.getItem('equipmentAdminProductData') || ''
     };
     let customers = [];
     let currentCustomer = null;
@@ -301,6 +364,14 @@
     let deleteTargetId = null;
     let editTargetId = null;
     let importData = null;
+
+    // Matrix data for cascading dropdowns
+    let matrixData = {
+      heavyDuty: [],   // Make|Type|SubModel|Model|Variant
+      trucks: [],       // Year|Make|Model|Trim|Engine
+      automotive: []    // Year|Make|Model|Trim|Engine
+    };
+    let matrixLoaded = false;
 
     // ========================================
     // HELPERS
@@ -328,16 +399,230 @@
     function escAttr(t) { if (!t) return ''; return String(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     // ========================================
+    // MATRIX DATA LOADING
+    // ========================================
+    async function loadMatrixData() {
+      if (!config.productDataUrl) {
+        matrixLoaded = false;
+        return;
+      }
+
+      try {
+        showMsg('Loading product data...', 'info');
+        const r = await fetch(config.productDataUrl);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        
+        // Parse products
+        const products = data.products || [];
+        matrixData = { heavyDuty: [], trucks: [], automotive: [] };
+        
+        products.forEach(product => {
+          const mf = product.metafields || {};
+          const compat = mf.compatability || {};
+          
+          // Matrix1: Heavy-Duty
+          if (compat.matrix1) {
+            compat.matrix1.split('\n').forEach(line => {
+              const parts = line.split('|').map(p => p.trim());
+              if (parts.length >= 4 && parts[0]) {
+                matrixData.heavyDuty.push({
+                  make: parts[0], type: parts[1], submodel: parts[2] || '',
+                  model: parts[3], variant: parts[4] || ''
+                });
+              }
+            });
+          }
+          
+          // Matrix2: Trucks
+          if (compat.matrix2) {
+            compat.matrix2.split('\n').forEach(line => {
+              const parts = line.split('|').map(p => p.trim());
+              if (parts.length >= 3 && parts[0]) {
+                matrixData.trucks.push({
+                  year: parts[0], make: parts[1], model: parts[2],
+                  trim: parts[3] || '', engine: parts[4] || ''
+                });
+              }
+            });
+          }
+          
+          // Matrix3: Automotive
+          if (compat.matrix3) {
+            compat.matrix3.split('\n').forEach(line => {
+              const parts = line.split('|').map(p => p.trim());
+              if (parts.length >= 3 && parts[0]) {
+                matrixData.automotive.push({
+                  year: parts[0], make: parts[1], model: parts[2],
+                  trim: parts[3] || '', engine: parts[4] || ''
+                });
+              }
+            });
+          }
+        });
+
+        // Deduplicate
+        matrixData.heavyDuty = dedupeArray(matrixData.heavyDuty, ['make', 'type', 'submodel', 'model', 'variant']);
+        matrixData.trucks = dedupeArray(matrixData.trucks, ['year', 'make', 'model', 'trim', 'engine']);
+        matrixData.automotive = dedupeArray(matrixData.automotive, ['year', 'make', 'model', 'trim', 'engine']);
+
+        matrixLoaded = true;
+        showMsg('✅ Loaded ' + matrixData.heavyDuty.length + ' HD, ' + matrixData.trucks.length + ' Trucks, ' + matrixData.automotive.length + ' Auto entries', 'success');
+      } catch (e) {
+        matrixLoaded = false;
+        showMsg('Failed to load product data: ' + e.message, 'error');
+      }
+    }
+
+    function dedupeArray(arr, keys) {
+      const seen = new Set();
+      return arr.filter(item => {
+        const key = keys.map(k => item[k] || '').join('||');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    // ========================================
+    // DROPDOWN UTILITIES
+    // ========================================
+    function getUniqueValues(arr, key, filters = {}) {
+      let filtered = arr;
+      Object.keys(filters).forEach(filterKey => {
+        if (filters[filterKey]) {
+          filtered = filtered.filter(item => item[filterKey] === filters[filterKey]);
+        }
+      });
+      return [...new Set(filtered.map(item => item[key]).filter(Boolean))].sort();
+    }
+
+    function populateSelect(selectEl, options, placeholder, currentValue = '') {
+      if (!selectEl) return;
+      selectEl.innerHTML = '<option value="">' + placeholder + '</option>';
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        if (opt === currentValue) option.selected = true;
+        selectEl.appendChild(option);
+      });
+      selectEl.disabled = options.length === 0;
+    }
+
+    function updateHDDropdowns(changedField) {
+      const hdMake = document.getElementById('editHdMake');
+      const hdType = document.getElementById('editHdType');
+      const hdSubmodel = document.getElementById('editHdSubmodel');
+      const hdModel = document.getElementById('editHdModel');
+      const hdVariant = document.getElementById('editHdVariant');
+      const submodelGroup = document.getElementById('hdSubmodelGroup');
+      
+      const filters = {};
+      if (hdMake?.value) filters.make = hdMake.value;
+      if (hdType?.value) filters.type = hdType.value;
+      if (hdSubmodel?.value) filters.submodel = hdSubmodel.value;
+      if (hdModel?.value) filters.model = hdModel.value;
+      
+      if (changedField === 'make') {
+        const types = getUniqueValues(matrixData.heavyDuty, 'type', { make: filters.make });
+        populateSelect(hdType, types, 'Select Type');
+        populateSelect(hdSubmodel, [], 'Select Sub-Model');
+        populateSelect(hdModel, [], 'Select Model');
+        populateSelect(hdVariant, [], 'Select Variant');
+        if (submodelGroup) submodelGroup.style.display = 'none';
+      }
+      
+      if (changedField === 'make' || changedField === 'type') {
+        if (filters.type) {
+          const submodels = getUniqueValues(matrixData.heavyDuty, 'submodel', { make: filters.make, type: filters.type });
+          if (submodels.length > 0) {
+            if (submodelGroup) submodelGroup.style.display = 'block';
+            populateSelect(hdSubmodel, submodels, 'Select Sub-Model');
+          } else {
+            if (submodelGroup) submodelGroup.style.display = 'none';
+          }
+          const models = getUniqueValues(matrixData.heavyDuty, 'model', { make: filters.make, type: filters.type });
+          populateSelect(hdModel, models, 'Select Model');
+          populateSelect(hdVariant, [], 'Select Variant');
+        }
+      }
+      
+      if (changedField === 'submodel') {
+        const models = getUniqueValues(matrixData.heavyDuty, 'model', { make: filters.make, type: filters.type, submodel: filters.submodel });
+        populateSelect(hdModel, models, 'Select Model');
+        populateSelect(hdVariant, [], 'Select Variant');
+      }
+      
+      if (changedField === 'submodel' || changedField === 'model') {
+        if (filters.model) {
+          const variants = getUniqueValues(matrixData.heavyDuty, 'variant', filters);
+          populateSelect(hdVariant, variants, 'Select Variant');
+        }
+      }
+    }
+
+    function updateAutoDropdowns(changedField) {
+      const category = document.getElementById('editCategory')?.value;
+      const data = category === 'Trucks' ? matrixData.trucks : matrixData.automotive;
+      
+      const autoYear = document.getElementById('editAutoYear');
+      const autoMake = document.getElementById('editAutoMake');
+      const autoModel = document.getElementById('editAutoModel');
+      const autoTrim = document.getElementById('editAutoTrim');
+      const autoEngine = document.getElementById('editAutoEngine');
+      
+      const filters = {};
+      if (autoYear?.value) filters.year = autoYear.value;
+      if (autoMake?.value) filters.make = autoMake.value;
+      if (autoModel?.value) filters.model = autoModel.value;
+      if (autoTrim?.value) filters.trim = autoTrim.value;
+      
+      if (changedField === 'year') {
+        const makes = getUniqueValues(data, 'make', { year: filters.year });
+        populateSelect(autoMake, makes, 'Select Make');
+        populateSelect(autoModel, [], 'Select Model');
+        populateSelect(autoTrim, [], 'Select Trim');
+        populateSelect(autoEngine, [], 'Select Engine');
+      }
+      
+      if (changedField === 'year' || changedField === 'make') {
+        if (filters.make) {
+          const models = getUniqueValues(data, 'model', { year: filters.year, make: filters.make });
+          populateSelect(autoModel, models, 'Select Model');
+          populateSelect(autoTrim, [], 'Select Trim');
+          populateSelect(autoEngine, [], 'Select Engine');
+        }
+      }
+      
+      if (changedField === 'model') {
+        if (filters.model) {
+          const trims = getUniqueValues(data, 'trim', { year: filters.year, make: filters.make, model: filters.model });
+          const engines = getUniqueValues(data, 'engine', { year: filters.year, make: filters.make, model: filters.model });
+          populateSelect(autoTrim, trims, trims.length ? 'Select Trim' : 'No Trims Available');
+          populateSelect(autoEngine, engines, 'Select Engine');
+        }
+      }
+      
+      if (changedField === 'trim') {
+        const engines = getUniqueValues(data, 'engine', filters);
+        populateSelect(autoEngine, engines, 'Select Engine');
+      }
+    }
+
+    // ========================================
     // INIT
     // ========================================
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('apiEndpoint').value = config.apiEndpoint;
       document.getElementById('storeDomain').value = config.storeDomain;
+      document.getElementById('productDataUrl').value = config.productDataUrl;
       
       // Config
       document.getElementById('toggleConfig').onclick = () => document.getElementById('configPanel').classList.toggle('show');
       document.getElementById('saveConfig').onclick = saveConfig;
       document.getElementById('testConnection').onclick = testConnection;
+      document.getElementById('loadProductData').onclick = loadMatrixData;
       
       // Search
       document.getElementById('searchBtn').onclick = renderCustomers;
@@ -369,7 +654,19 @@
       document.getElementById('cancelEditBtn').onclick = closeEditModal;
       document.getElementById('saveEditBtn').onclick = saveEdit;
       document.getElementById('editModal').onclick = e => { if (e.target.id === 'editModal') closeEditModal(); };
-      document.getElementById('editCategory').onchange = updateTypeYearLabel;
+      document.getElementById('editCategory').onchange = handleCategoryChange;
+      
+      // HD Cascading
+      document.getElementById('editHdMake').onchange = () => updateHDDropdowns('make');
+      document.getElementById('editHdType').onchange = () => updateHDDropdowns('type');
+      document.getElementById('editHdSubmodel').onchange = () => updateHDDropdowns('submodel');
+      document.getElementById('editHdModel').onchange = () => updateHDDropdowns('model');
+      
+      // Auto Cascading
+      document.getElementById('editAutoYear').onchange = () => updateAutoDropdowns('year');
+      document.getElementById('editAutoMake').onchange = () => updateAutoDropdowns('make');
+      document.getElementById('editAutoModel').onchange = () => updateAutoDropdowns('model');
+      document.getElementById('editAutoTrim').onchange = () => updateAutoDropdowns('trim');
       
       // Delete Modal
       document.getElementById('closeDeleteModal').onclick = closeDeleteModal;
@@ -377,6 +674,8 @@
       document.getElementById('confirmDeleteBtn').onclick = confirmDelete;
       document.getElementById('deleteModal').onclick = e => { if (e.target.id === 'deleteModal') closeDeleteModal(); };
       
+      // Load data
+      if (config.productDataUrl) loadMatrixData();
       loadCustomers();
     });
 
@@ -389,9 +688,12 @@
     function saveConfig() {
       config.apiEndpoint = document.getElementById('apiEndpoint').value.trim();
       config.storeDomain = document.getElementById('storeDomain').value.trim();
+      config.productDataUrl = document.getElementById('productDataUrl').value.trim();
       localStorage.setItem('equipmentAdminEndpoint', config.apiEndpoint);
       localStorage.setItem('equipmentAdminStore', config.storeDomain);
+      localStorage.setItem('equipmentAdminProductData', config.productDataUrl);
       showMsg('Configuration saved!', 'success');
+      if (config.productDataUrl) loadMatrixData();
       loadCustomers();
     }
 
@@ -484,18 +786,22 @@
         html += '<div class="empty-state"><h3>No equipment saved</h3><p>This customer hasn\'t added any equipment yet.</p></div>';
       } else {
         html += '<div class="equipment-section-header"><h4>📋 Equipment List</h4><p style="font-size:12px;color:#6b7280;margin:0">Click Edit to modify any item</p></div>';
-        html += '<div class="equipment-list-admin"><table><thead><tr><th style="width:50px">★</th><th>SKU/ID</th><th>Category</th><th>Make</th><th>Type/Year</th><th>Model</th><th>Serial</th><th style="width:130px">Actions</th></tr></thead><tbody>';
+        html += '<div class="equipment-list-admin"><table><thead><tr><th style="width:50px">★</th><th>SKU/ID</th><th>Category</th><th>Make</th><th>Type/Year</th><th>Sub-Model</th><th>Model</th><th>Variant/Trim</th><th>Serial</th><th style="width:130px">Actions</th></tr></thead><tbody>';
         
         currentEquipment.forEach(m => {
           const isHD = m.category === 'Heavy-Duty Machinery';
           const typeYear = isHD ? (m.type || '') : (m.year || '');
+          const submodel = isHD ? (m.submodel || '') : '';
+          const variantTrim = isHD ? (m.variant || '') : (m.trim || '');
           html += '<tr data-id="' + m.id + '">' +
             '<td><span class="favorite-star ' + (m.favorite ? '' : 'inactive') + '" onclick="toggleFavorite(\'' + m.id + '\')" title="Toggle favorite">' + (m.favorite ? '★' : '☆') + '</span></td>' +
             '<td><span class="equipment-name">' + esc(m.name || '—') + '</span></td>' +
             '<td>' + esc(m.category || '—') + '</td>' +
             '<td>' + esc(m.make || '—') + '</td>' +
             '<td>' + esc(typeYear || '—') + '</td>' +
+            '<td>' + esc(submodel || '—') + '</td>' +
             '<td>' + esc(m.model || '—') + '</td>' +
+            '<td>' + esc(variantTrim || '—') + '</td>' +
             '<td>' + esc(m.serial || '—') + '</td>' +
             '<td><div class="equipment-actions">' +
               '<button class="btn btn-xs btn-edit" onclick="openEditModal(\'' + m.id + '\')" title="Edit this equipment">✏️ Edit</button>' +
@@ -513,13 +819,74 @@
     }
 
     // ========================================
-    // EDIT MODAL - This is where you can edit equipment!
+    // EDIT MODAL WITH CASCADING DROPDOWNS
     // ========================================
+    function handleCategoryChange() {
+      const category = document.getElementById('editCategory').value;
+      const hdFields = document.getElementById('hdFields');
+      const autoFields = document.getElementById('autoFields');
+      const submodelGroup = document.getElementById('hdSubmodelGroup');
+      
+      hdFields.classList.remove('show');
+      autoFields.classList.remove('show');
+      
+      if (category === 'Heavy-Duty Machinery') {
+        hdFields.classList.add('show');
+        // Populate makes
+        if (matrixLoaded) {
+          const makes = getUniqueValues(matrixData.heavyDuty, 'make');
+          populateSelect(document.getElementById('editHdMake'), makes, 'Select Make');
+        }
+        populateSelect(document.getElementById('editHdType'), [], 'Select Type');
+        populateSelect(document.getElementById('editHdSubmodel'), [], 'Select Sub-Model');
+        populateSelect(document.getElementById('editHdModel'), [], 'Select Model');
+        populateSelect(document.getElementById('editHdVariant'), [], 'Select Variant');
+        if (submodelGroup) submodelGroup.style.display = 'none';
+      } else if (category === 'Trucks' || category === 'Automotive') {
+        autoFields.classList.add('show');
+        // Populate years
+        if (matrixLoaded) {
+          const data = category === 'Trucks' ? matrixData.trucks : matrixData.automotive;
+          const years = getUniqueValues(data, 'year');
+          populateSelect(document.getElementById('editAutoYear'), years, 'Select Year');
+        }
+        populateSelect(document.getElementById('editAutoMake'), [], 'Select Make');
+        populateSelect(document.getElementById('editAutoModel'), [], 'Select Model');
+        populateSelect(document.getElementById('editAutoTrim'), [], 'Select Trim');
+        populateSelect(document.getElementById('editAutoEngine'), [], 'Select Engine');
+      }
+      
+      updateDataStatusIndicator();
+    }
+
+    function updateDataStatusIndicator() {
+      const indicator = document.getElementById('dataStatusIndicator');
+      if (!indicator) return;
+      
+      if (matrixLoaded) {
+        indicator.innerHTML = '<div class="data-status loaded">✅ Dropdown data loaded - select from options</div>';
+      } else if (config.productDataUrl) {
+        indicator.innerHTML = '<div class="data-status error">⚠️ Product data not loaded - <a href="#" onclick="loadMatrixData();return false;">click to load</a></div>';
+      } else {
+        indicator.innerHTML = '<div class="data-status error">ℹ️ No product data URL configured - using manual entry</div>';
+      }
+    }
+
     function openEditModal(id) {
       editTargetId = id;
       const modal = document.getElementById('editModal');
       const title = document.getElementById('editModalTitle');
       const saveBtn = document.getElementById('saveEditBtn');
+      const hdFields = document.getElementById('hdFields');
+      const autoFields = document.getElementById('autoFields');
+      const submodelGroup = document.getElementById('hdSubmodelGroup');
+      
+      // Reset fields
+      hdFields.classList.remove('show');
+      autoFields.classList.remove('show');
+      if (submodelGroup) submodelGroup.style.display = 'none';
+      
+      updateDataStatusIndicator();
       
       if (id) {
         // EDITING existing equipment
@@ -531,32 +898,94 @@
         
         document.getElementById('editName').value = m.name || '';
         document.getElementById('editCategory').value = m.category || 'Heavy-Duty Machinery';
-        document.getElementById('editMake').value = m.make || '';
-        document.getElementById('editModel').value = m.model || '';
         document.getElementById('editSerial').value = m.serial || '';
         document.getElementById('editFavorite').checked = m.favorite || false;
         
         const isHD = m.category === 'Heavy-Duty Machinery';
-        document.getElementById('editTypeYear').value = isHD ? (m.type || '') : (m.year || '');
+        
+        if (isHD) {
+          hdFields.classList.add('show');
+          if (matrixLoaded) {
+            populateHDDropdownsForEdit(m);
+          } else {
+            // Fallback to single option with current value
+            populateSelect(document.getElementById('editHdMake'), m.make ? [m.make] : [], 'Select Make', m.make);
+            populateSelect(document.getElementById('editHdType'), m.type ? [m.type] : [], 'Select Type', m.type);
+            if (m.submodel) {
+              if (submodelGroup) submodelGroup.style.display = 'block';
+              populateSelect(document.getElementById('editHdSubmodel'), [m.submodel], 'Select Sub-Model', m.submodel);
+            }
+            populateSelect(document.getElementById('editHdModel'), m.model ? [m.model] : [], 'Select Model', m.model);
+            populateSelect(document.getElementById('editHdVariant'), m.variant ? [m.variant] : [], 'Select Variant', m.variant);
+          }
+        } else {
+          autoFields.classList.add('show');
+          if (matrixLoaded) {
+            populateAutoDropdownsForEdit(m);
+          } else {
+            populateSelect(document.getElementById('editAutoYear'), m.year ? [m.year] : [], 'Select Year', m.year);
+            populateSelect(document.getElementById('editAutoMake'), m.make ? [m.make] : [], 'Select Make', m.make);
+            populateSelect(document.getElementById('editAutoModel'), m.model ? [m.model] : [], 'Select Model', m.model);
+            populateSelect(document.getElementById('editAutoTrim'), m.trim ? [m.trim] : [], 'Select Trim', m.trim);
+            populateSelect(document.getElementById('editAutoEngine'), m.engine ? [m.engine] : [], 'Select Engine', m.engine);
+          }
+        }
       } else {
         // ADDING new equipment
         title.textContent = '➕ Add New Equipment';
         saveBtn.textContent = '💾 Add Equipment';
         
         document.getElementById('editName').value = '';
-        document.getElementById('editCategory').value = 'Heavy-Duty Machinery';
-        document.getElementById('editMake').value = '';
-        document.getElementById('editTypeYear').value = '';
-        document.getElementById('editModel').value = '';
+        document.getElementById('editCategory').value = '';
         document.getElementById('editSerial').value = '';
         document.getElementById('editFavorite').checked = false;
       }
       
-      updateTypeYearLabel();
       modal.classList.add('show');
-      
-      // Focus the first field
       setTimeout(() => document.getElementById('editName').focus(), 100);
+    }
+
+    function populateHDDropdownsForEdit(m) {
+      const hdMake = document.getElementById('editHdMake');
+      const hdType = document.getElementById('editHdType');
+      const hdSubmodel = document.getElementById('editHdSubmodel');
+      const hdModel = document.getElementById('editHdModel');
+      const hdVariant = document.getElementById('editHdVariant');
+      const submodelGroup = document.getElementById('hdSubmodelGroup');
+      
+      populateSelect(hdMake, getUniqueValues(matrixData.heavyDuty, 'make'), 'Select Make', m.make);
+      if (m.make) {
+        populateSelect(hdType, getUniqueValues(matrixData.heavyDuty, 'type', { make: m.make }), 'Select Type', m.type);
+      }
+      if (m.make && m.type) {
+        const submodels = getUniqueValues(matrixData.heavyDuty, 'submodel', { make: m.make, type: m.type });
+        if (submodels.length > 0 || m.submodel) {
+          if (submodelGroup) submodelGroup.style.display = 'block';
+          populateSelect(hdSubmodel, submodels, 'Select Sub-Model', m.submodel);
+        }
+        const filters = { make: m.make, type: m.type };
+        if (m.submodel) filters.submodel = m.submodel;
+        populateSelect(hdModel, getUniqueValues(matrixData.heavyDuty, 'model', filters), 'Select Model', m.model);
+      }
+      if (m.model) {
+        populateSelect(hdVariant, getUniqueValues(matrixData.heavyDuty, 'variant', { make: m.make, type: m.type, model: m.model }), 'Select Variant', m.variant);
+      }
+    }
+
+    function populateAutoDropdownsForEdit(m) {
+      const data = m.category === 'Trucks' ? matrixData.trucks : matrixData.automotive;
+      
+      populateSelect(document.getElementById('editAutoYear'), getUniqueValues(data, 'year'), 'Select Year', m.year);
+      if (m.year) {
+        populateSelect(document.getElementById('editAutoMake'), getUniqueValues(data, 'make', { year: m.year }), 'Select Make', m.make);
+      }
+      if (m.make) {
+        populateSelect(document.getElementById('editAutoModel'), getUniqueValues(data, 'model', { year: m.year, make: m.make }), 'Select Model', m.model);
+      }
+      if (m.model) {
+        populateSelect(document.getElementById('editAutoTrim'), getUniqueValues(data, 'trim', { year: m.year, make: m.make, model: m.model }), 'Select Trim', m.trim);
+        populateSelect(document.getElementById('editAutoEngine'), getUniqueValues(data, 'engine', { year: m.year, make: m.make, model: m.model }), 'Select Engine', m.engine);
+      }
     }
 
     function closeEditModal() {
@@ -564,33 +993,42 @@
       editTargetId = null;
     }
 
-    function updateTypeYearLabel() {
-      const cat = document.getElementById('editCategory').value;
-      const label = document.getElementById('editTypeYearLabel');
-      const input = document.getElementById('editTypeYear');
-      
-      if (cat === 'Heavy-Duty Machinery') {
-        label.textContent = 'Type *';
-        input.placeholder = 'e.g., Tractors, Excavators, Loaders';
-      } else {
-        label.textContent = 'Year *';
-        input.placeholder = 'e.g., 2020, 2021, 2022';
-      }
-    }
-
     async function saveEdit() {
       const name = document.getElementById('editName').value.trim();
       const category = document.getElementById('editCategory').value;
-      const make = document.getElementById('editMake').value.trim();
-      const typeYear = document.getElementById('editTypeYear').value.trim();
-      const model = document.getElementById('editModel').value.trim();
       const serial = document.getElementById('editSerial').value.trim();
       const favorite = document.getElementById('editFavorite').checked;
 
-      // Validation
-      if (!name || !make || !typeYear || !model) {
-        showMsg('Please fill in all required fields (SKU/ID, Make, Type/Year, Model)', 'error');
+      if (!name || !category) {
+        showMsg('Please fill in SKU/ID and Category', 'error');
         return;
+      }
+
+      const isHD = category === 'Heavy-Duty Machinery';
+      let make, typeOrYear, model, submodel = '', variantOrTrim = '', engine = '';
+
+      if (isHD) {
+        make = document.getElementById('editHdMake').value.trim();
+        typeOrYear = document.getElementById('editHdType').value.trim();
+        submodel = document.getElementById('editHdSubmodel').value.trim();
+        model = document.getElementById('editHdModel').value.trim();
+        variantOrTrim = document.getElementById('editHdVariant').value.trim();
+        
+        if (!make || !typeOrYear || !model) {
+          showMsg('Please fill in Make, Type, and Model', 'error');
+          return;
+        }
+      } else {
+        typeOrYear = document.getElementById('editAutoYear').value.trim();
+        make = document.getElementById('editAutoMake').value.trim();
+        model = document.getElementById('editAutoModel').value.trim();
+        variantOrTrim = document.getElementById('editAutoTrim').value.trim();
+        engine = document.getElementById('editAutoEngine').value.trim();
+        
+        if (!make || !typeOrYear || !model) {
+          showMsg('Please fill in Year, Make, and Model', 'error');
+          return;
+        }
       }
 
       // Check favorites limit
@@ -602,11 +1040,10 @@
         }
       }
 
-      const isHD = category === 'Heavy-Duty Machinery';
       const now = new Date().toISOString();
 
       if (editTargetId) {
-        // UPDATE existing equipment
+        // UPDATE existing
         const m = currentEquipment.find(x => x.id === editTargetId);
         if (!m) return;
         
@@ -619,30 +1056,36 @@
         m.updatedAt = now;
         
         if (isHD) {
-          m.type = typeYear;
+          m.type = typeOrYear;
+          m.submodel = submodel;
+          m.variant = variantOrTrim;
           delete m.year;
+          delete m.trim;
+          delete m.engine;
         } else {
-          m.year = typeYear;
+          m.year = typeOrYear;
+          m.trim = variantOrTrim;
+          m.engine = engine;
           delete m.type;
+          delete m.submodel;
+          delete m.variant;
         }
       } else {
-        // ADD new equipment
+        // ADD new
         const newEquip = {
           id: 'eq_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-          name,
-          category,
-          make,
-          model,
-          serial,
-          favorite,
-          createdAt: now,
-          updatedAt: now
+          name, category, make, model, serial, favorite,
+          createdAt: now, updatedAt: now
         };
         
         if (isHD) {
-          newEquip.type = typeYear;
+          newEquip.type = typeOrYear;
+          newEquip.submodel = submodel;
+          newEquip.variant = variantOrTrim;
         } else {
-          newEquip.year = typeYear;
+          newEquip.year = typeOrYear;
+          newEquip.trim = variantOrTrim;
+          newEquip.engine = engine;
         }
         
         currentEquipment.push(newEquip);
@@ -657,11 +1100,10 @@
         });
         if (!r.ok) throw new Error('Failed to save');
         
-        showMsg(editTargetId ? '✅ Equipment updated successfully!' : '✅ Equipment added successfully!', 'success');
+        showMsg(editTargetId ? '✅ Equipment updated!' : '✅ Equipment added!', 'success');
         closeEditModal();
         renderDetail();
         
-        // Update customer count
         const c = customers.find(x => x.id === currentCustomer.id);
         if (c) c.equipmentCount = currentEquipment.length;
         updateStats();
@@ -696,7 +1138,7 @@
         renderDetail();
         showMsg(m.favorite ? '⭐ Added to favorites' : 'Removed from favorites', 'success');
       } catch (e) {
-        m.favorite = !m.favorite; // Revert
+        m.favorite = !m.favorite;
         showMsg('Error: ' + e.message, 'error');
       }
     }
@@ -716,21 +1158,16 @@
     }
 
     async function confirmDelete() {
-      if (!deleteTargetId || !currentCustomer) return;
+      if (!deleteTargetId) return;
       
-      const idx = currentEquipment.findIndex(m => m.id === deleteTargetId);
-      if (idx === -1) return;
-      
-      const removed = currentEquipment.splice(idx, 1)[0];
+      currentEquipment = currentEquipment.filter(x => x.id !== deleteTargetId);
       
       try {
-        const r = await fetch(config.apiEndpoint, {
+        await fetch(config.apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ customerId: currentCustomer.id, equipmentData: { machines: currentEquipment } })
         });
-        if (!r.ok) throw new Error('Failed');
-        
         showMsg('🗑️ Equipment deleted', 'success');
         closeDeleteModal();
         renderDetail();
@@ -740,7 +1177,6 @@
         updateStats();
         renderCustomers();
       } catch (e) {
-        currentEquipment.splice(idx, 0, removed);
         showMsg('Error: ' + e.message, 'error');
       }
     }
@@ -751,32 +1187,34 @@
     function handleCSVSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
+      e.target.value = '';
+      
       const reader = new FileReader();
-      reader.onload = function(ev) {
+      reader.onload = function(evt) {
         try {
-          const data = parseCSV(ev.target.result);
+          const data = parseCSV(evt.target.result);
           if (data.length === 0) { showMsg('CSV is empty or invalid', 'error'); return; }
           importData = data;
           showImportPreview(data);
-        } catch (err) { showMsg('CSV error: ' + err.message, 'error'); }
+        } catch (err) { showMsg('Error parsing CSV: ' + err.message, 'error'); }
       };
       reader.readAsText(file);
-      e.target.value = '';
     }
 
     function parseCSV(text) {
       const lines = text.split('\n').filter(l => l.trim());
       if (lines.length < 2) return [];
       const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
-      const map = { 'sku': 'name', 'sku/id': 'name', 'name': 'name', 'category': 'category', 'make': 'make', 'type': 'type', 'year': 'year', 'type/year': 'typeYear', 'model': 'model', 'serial': 'serial', 'serial #': 'serial', 'favorite': 'favorite' };
-      const mapped = headers.map(h => map[h] || h);
+      const headerMap = { 'sku': 'name', 'sku/id': 'name', 'name': 'name', 'category': 'category', 'make': 'make', 'type': 'type', 'year': 'year', 'type/year': 'typeYear', 'model': 'model', 'submodel': 'submodel', 'sub-model': 'submodel', 'variant': 'variant', 'trim': 'trim', 'variant/trim': 'variantTrim', 'engine': 'engine', 'serial': 'serial', 'serial #': 'serial', 'favorite': 'favorite' };
+      const mapped = headers.map(h => headerMap[h] || h);
       const results = [];
       for (let i = 1; i < lines.length; i++) {
-        const vals = parseCSVLine(lines[i]);
-        if (!vals.length) continue;
+        const values = parseCSVLine(lines[i]);
+        if (!values.length) continue;
         const row = {};
-        mapped.forEach((h, idx) => row[h] = vals[idx] || '');
+        mapped.forEach((h, idx) => row[h] = values[idx] || '');
         if (row.typeYear) { if (/^\d{4}$/.test(row.typeYear)) row.year = row.typeYear; else row.type = row.typeYear; delete row.typeYear; }
+        if (row.variantTrim) { if (row.category === 'Heavy-Duty Machinery') row.variant = row.variantTrim; else row.trim = row.variantTrim; delete row.variantTrim; }
         if (row.name || row.make) results.push(row);
       }
       return results;
@@ -807,7 +1245,7 @@
 
     async function doImport() {
       if (!importData || !importData.length) return;
-      const newEq = importData.map(r => ({ id: 'eq_' + Date.now().toString(36) + Math.random().toString(36).substr(2,5), name: r.name || '', category: r.category || 'Heavy-Duty Machinery', make: r.make || '', type: r.type || '', year: r.year || '', model: r.model || '', serial: r.serial || '', favorite: r.favorite === 'true' || r.favorite === 'yes', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
+      const newEq = importData.map(r => ({ id: 'eq_' + Date.now().toString(36) + Math.random().toString(36).substr(2,5), name: r.name || '', category: r.category || 'Heavy-Duty Machinery', make: r.make || '', type: r.type || '', submodel: r.submodel || '', year: r.year || '', model: r.model || '', variant: r.variant || '', trim: r.trim || '', engine: r.engine || '', serial: r.serial || '', favorite: r.favorite === 'true' || r.favorite === 'yes', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
       currentEquipment = currentEquipment.concat(newEq);
       try {
         const r = await fetch(config.apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customerId: currentCustomer.id, equipmentData: { machines: currentEquipment } }) });
@@ -860,10 +1298,12 @@
     }
 
     function toCSV(eq) {
-      let csv = 'SKU/ID,Category,Make,Type/Year,Model,Serial #,Favorite\n';
+      let csv = 'SKU/ID,Category,Make,Type/Year,Sub-Model,Model,Variant/Trim,Engine,Serial #,Favorite\n';
       eq.forEach(m => {
-        const ty = m.category === 'Heavy-Duty Machinery' ? (m.type || '') : (m.year || '');
-        csv += [csvEsc(m.name), csvEsc(m.category), csvEsc(m.make), csvEsc(ty), csvEsc(m.model), csvEsc(m.serial), m.favorite ? 'yes' : 'no'].join(',') + '\n';
+        const isHD = m.category === 'Heavy-Duty Machinery';
+        const ty = isHD ? (m.type || '') : (m.year || '');
+        const vt = isHD ? (m.variant || '') : (m.trim || '');
+        csv += [csvEsc(m.name), csvEsc(m.category), csvEsc(m.make), csvEsc(ty), csvEsc(m.submodel), csvEsc(m.model), csvEsc(vt), csvEsc(m.engine), csvEsc(m.serial), m.favorite ? 'yes' : 'no'].join(',') + '\n';
       });
       return csv;
     }
