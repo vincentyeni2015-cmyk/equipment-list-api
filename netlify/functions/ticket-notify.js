@@ -90,13 +90,13 @@ exports.handler = async (event) => {
 
       case 'new_ticket_admin':
         toEmail = adminEmail;
-        subject = `🎫 New Ticket #${ticketNumber} - ${ticketSubject}`;
+        subject = `New Ticket #${ticketNumber} - ${ticketSubject}`;
         htmlContent = generateAdminNotificationEmail({ customerName, customerEmail, ticketNumber, ticketSubject, ticketType, ticketDescription, STORE_NAME, STORE_URL });
         break;
 
       case 'customer_reply':
         toEmail = adminEmail;
-        subject = `💬 Customer Reply on Ticket #${ticketNumber}`;
+        subject = `Customer Reply on Ticket #${ticketNumber}`;
         htmlContent = generateCustomerReplyEmail({ customerName, customerEmail, ticketNumber, ticketSubject, message, STORE_NAME, STORE_URL });
         break;
 
@@ -156,7 +156,7 @@ function generateReplyEmail({ customerName, ticketNumber, ticketSubject, message
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     <div style="background:#000;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;color:#F7B910;font-size:24px;">${STORE_NAME}</h1>
+      <img src="https://cdn.shopify.com/s/files/1/0621/5155/7165/files/unionfilters_logo-gold.png?v=1769642755" alt="${STORE_NAME}" style="max-height:50px;max-width:200px;" />
     </div>
     <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
       <p style="color:#374151;font-size:16px;margin-bottom:8px;">Hi ${customerName || 'there'},</p>
@@ -191,7 +191,7 @@ function generateStatusEmail({ customerName, ticketNumber, ticketSubject, newSta
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     <div style="background:#000;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;color:#F7B910;font-size:24px;">${STORE_NAME}</h1>
+      <img src="https://cdn.shopify.com/s/files/1/0621/5155/7165/files/unionfilters_logo-gold.png?v=1769642755" alt="${STORE_NAME}" style="max-height:50px;max-width:200px;" />
     </div>
     <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
       <p style="color:#374151;font-size:16px;margin-bottom:24px;">Hi ${customerName || 'there'},</p>
@@ -220,7 +220,7 @@ function generateConfirmationEmail({ customerName, ticketNumber, ticketSubject, 
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
     <div style="background:#000;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;color:#F7B910;font-size:24px;">${STORE_NAME}</h1>
+      <img src="https://cdn.shopify.com/s/files/1/0621/5155/7165/files/unionfilters_logo-gold.png?v=1769642755" alt="${STORE_NAME}" style="max-height:50px;max-width:200px;" />
     </div>
     <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
       <div style="text-align:center;margin-bottom:24px;">
@@ -262,10 +262,11 @@ function generateAdminNotificationEmail({ customerName, customerEmail, ticketNum
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-    <div style="background:#1e293b;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;color:#F7B910;font-size:24px;">🎫 New Support Ticket</h1>
+    <div style="background:#000;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+      <img src="https://cdn.shopify.com/s/files/1/0621/5155/7165/files/unionfilters_logo-gold.png?v=1769642755" alt="${STORE_NAME}" style="max-height:50px;max-width:200px;" />
     </div>
     <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+      <h2 style="margin:0 0 24px;color:#1f2937;font-size:20px;text-align:center;">New Support Ticket</h2>
       <div style="background:#fef3c7;border-radius:8px;padding:16px;margin-bottom:24px;border-left:4px solid #F7B910;">
         <p style="margin:0 0 4px;font-size:14px;color:#92400e;font-weight:600;">New ticket submitted</p>
         <p style="margin:0;font-size:24px;color:#1f2937;font-weight:700;">#${ticketNumber}</p>
@@ -316,10 +317,11 @@ function generateCustomerReplyEmail({ customerName, customerEmail, ticketNumber,
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-    <div style="background:#1e293b;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-      <h1 style="margin:0;color:#F7B910;font-size:24px;">💬 Customer Reply</h1>
+    <div style="background:#000;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+      <img src="https://cdn.shopify.com/s/files/1/0621/5155/7165/files/unionfilters_logo-gold.png?v=1769642755" alt="${STORE_NAME}" style="max-height:50px;max-width:200px;" />
     </div>
     <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+      <h2 style="margin:0 0 24px;color:#1f2937;font-size:20px;text-align:center;">Customer Reply</h2>
       <div style="background:#dbeafe;border-radius:8px;padding:16px;margin-bottom:24px;border-left:4px solid #3b82f6;">
         <p style="margin:0 0 4px;font-size:14px;color:#1e40af;font-weight:600;">New reply on ticket</p>
         <p style="margin:0;font-size:24px;color:#1f2937;font-weight:700;">#${ticketNumber}</p>
