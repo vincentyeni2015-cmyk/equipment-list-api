@@ -113,6 +113,49 @@ exports.handler = async (event) => {
 
     const newTicket = await createResponse.json();
 
+    // Send email notification to customer (confirmation)
+    try {
+      const notifyUrl = process.env.URL 
+        ? `${process.env.URL}/.netlify/functions/ticket-notify`
+        : 'https://unrivaled-zuccutto-bdbd4b.netlify.app/.netlify/functions/ticket-notify';
+      
+      // Notify customer
+      if (customerEmail) {
+        await fetch(notifyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'ticket_created',
+            customerEmail: customerEmail,
+            customerName: customerName,
+            ticketNumber: nextTicketNumber,
+            ticketSubject: subject.trim()
+          })
+        });
+      }
+
+      // Notify admin(s)
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        await fetch(notifyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new_ticket_admin',
+            adminEmail: adminEmail,
+            customerName: customerName || 'Customer',
+            customerEmail: customerEmail,
+            ticketNumber: nextTicketNumber,
+            ticketSubject: subject.trim(),
+            ticketType: type,
+            ticketDescription: description.trim()
+          })
+        });
+      }
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+    }
+
     return {
       statusCode: 200,
       headers,
