@@ -77,7 +77,7 @@ exports.handler = async (event) => {
       author_email: authorEmail || null,
       is_staff: isStaff || false,
       is_internal: isInternal || false,
-      attachments: attachments && attachments.length > 0 ? JSON.stringify(attachments) : null,
+      attachments: attachments && attachments.length > 0 ? attachments : null,
       created_at: new Date().toISOString()
     };
 
@@ -182,4 +182,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
