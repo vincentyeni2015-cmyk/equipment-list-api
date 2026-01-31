@@ -54,17 +54,31 @@ exports.handler = async (event) => {
 
     const messages = await response.json();
 
-    const formattedMessages = (messages || []).map(msg => ({
-      id: msg.id,
-      ticketId: msg.ticket_id,
-      message: msg.message,
-      authorId: msg.author_id,
-      authorName: msg.author_name,
-      authorEmail: msg.author_email,
-      isStaff: msg.is_staff,
-      isInternal: msg.is_internal,
-      createdAt: msg.created_at
-    }));
+    const formattedMessages = (messages || []).map(msg => {
+      let attachments = null;
+      if (msg.attachments) {
+        try {
+          attachments = typeof msg.attachments === 'string' 
+            ? JSON.parse(msg.attachments) 
+            : msg.attachments;
+        } catch (e) {
+          console.error('Error parsing attachments:', e);
+        }
+      }
+      
+      return {
+        id: msg.id,
+        ticketId: msg.ticket_id,
+        message: msg.message,
+        authorId: msg.author_id,
+        authorName: msg.author_name,
+        authorEmail: msg.author_email,
+        isStaff: msg.is_staff,
+        isInternal: msg.is_internal,
+        attachments: attachments,
+        createdAt: msg.created_at
+      };
+    });
 
     return {
       statusCode: 200,
@@ -88,3 +102,4 @@ exports.handler = async (event) => {
     };
   }
 };
+
