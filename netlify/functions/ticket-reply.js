@@ -144,12 +144,42 @@ exports.handler = async (event) => {
             customerName: ticket.customer_name,
             ticketNumber: ticket.ticket_number,
             ticketSubject: ticket.subject,
-            message: message.trim(),
+            message: (message || '').trim(),
             staffName: authorName || 'Support Team'
           })
         });
+        console.log('Admin reply notification sent to:', ticket.customer_email);
       } catch (emailError) {
         console.error('Email notification failed:', emailError);
+      }
+    }
+
+    // Send email notification to admin when customer replies
+    if (!isStaff) {
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        try {
+          const notifyUrl = process.env.URL 
+            ? `${process.env.URL}/.netlify/functions/ticket-notify`
+            : 'https://unrivaled-zuccutto-bdbd4b.netlify.app/.netlify/functions/ticket-notify';
+          
+          await fetch(notifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'customer_reply',
+              adminEmail: adminEmail,
+              customerName: authorName || ticket.customer_name || 'Customer',
+              customerEmail: ticket.customer_email,
+              ticketNumber: ticket.ticket_number,
+              ticketSubject: ticket.subject,
+              message: (message || '').trim()
+            })
+          });
+          console.log('Customer reply notification sent to admin:', adminEmail);
+        } catch (emailError) {
+          console.error('Admin notification failed:', emailError);
+        }
       }
     }
 
