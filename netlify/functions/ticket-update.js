@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { ticketId, status, priority, assignedTo, assignedName } = body;
+    const { ticketId, status, priority, assignedTo, assignedName, archived } = body;
 
     if (!ticketId) {
       return {
@@ -106,6 +106,11 @@ exports.handler = async (event) => {
     if (assignedTo !== undefined) {
       updateData.assigned_to = assignedTo;
       updateData.assigned_name = assignedName || null;
+    }
+
+    // Set archived status
+    if (archived !== undefined) {
+      updateData.archived = archived;
     }
 
     // Update the ticket

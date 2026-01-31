@@ -111,6 +111,17 @@ exports.handler = async (event) => {
 };
 
 function formatTicket(ticket) {
+  let attachments = null;
+  if (ticket.attachments) {
+    try {
+      attachments = typeof ticket.attachments === 'string' 
+        ? JSON.parse(ticket.attachments) 
+        : ticket.attachments;
+    } catch (e) {
+      attachments = null;
+    }
+  }
+  
   return {
     id: ticket.id,
     ticketNumber: ticket.ticket_number,
@@ -127,6 +138,8 @@ function formatTicket(ticket) {
     equipmentId: ticket.equipment_id,
     equipmentName: ticket.equipment_name,
     partNumber: ticket.part_number,
+    attachments: attachments,
+    archived: ticket.archived || false,
     createdAt: ticket.created_at,
     updatedAt: ticket.updated_at
   };

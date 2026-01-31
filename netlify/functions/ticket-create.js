@@ -41,7 +41,8 @@ exports.handler = async (event) => {
       returnReason,
       equipmentId,
       equipmentName,
-      partNumber
+      partNumber,
+      attachments
     } = body;
 
     // Validate required fields
@@ -87,6 +88,8 @@ exports.handler = async (event) => {
       equipment_id: equipmentId || null,
       equipment_name: equipmentName || null,
       part_number: partNumber || null,
+      attachments: attachments ? JSON.stringify(attachments) : null,
+      archived: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

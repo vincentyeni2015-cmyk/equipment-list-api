@@ -58,21 +58,36 @@ exports.handler = async (event) => {
     const tickets = await response.json();
     const totalCount = response.headers.get('content-range')?.split('/')[1] || tickets.length;
 
-    const formattedTickets = (tickets || []).map(ticket => ({
-      id: ticket.id,
-      ticketNumber: ticket.ticket_number,
-      customerId: ticket.customer_id,
-      customerEmail: ticket.customer_email,
-      customerName: ticket.customer_name,
-      type: ticket.type,
-      priority: ticket.priority,
-      status: ticket.status,
-      subject: ticket.subject,
-      description: ticket.description,
-      orderNumber: ticket.order_number,
-      createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at
-    }));
+    const formattedTickets = (tickets || []).map(ticket => {
+      let attachments = null;
+      if (ticket.attachments) {
+        try {
+          attachments = typeof ticket.attachments === 'string' 
+            ? JSON.parse(ticket.attachments) 
+            : ticket.attachments;
+        } catch (e) {
+          attachments = null;
+        }
+      }
+      
+      return {
+        id: ticket.id,
+        ticketNumber: ticket.ticket_number,
+        customerId: ticket.customer_id,
+        customerEmail: ticket.customer_email,
+        customerName: ticket.customer_name,
+        type: ticket.type,
+        priority: ticket.priority,
+        status: ticket.status,
+        subject: ticket.subject,
+        description: ticket.description,
+        orderNumber: ticket.order_number,
+        attachments: attachments,
+        archived: ticket.archived || false,
+        createdAt: ticket.created_at,
+        updatedAt: ticket.updated_at
+      };
+    });
 
     return {
       statusCode: 200,
