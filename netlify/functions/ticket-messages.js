@@ -1,16 +1,11 @@
 /**
  * ticket-messages.js
- * Netlify Function to get messages for a specific ticket
- * 
- * Endpoint: GET /.netlify/functions/ticket-messages?ticketId=xxx
+ * Netlify Function to get messages for a ticket
+ * Uses Supabase REST API directly (no SDK needed)
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -43,24 +38,21 @@ exports.handler = async (event) => {
       };
     }
 
-    // Build query
-    let query = supabase
-      .from('ticket_messages')
-      .select('*')
-      .eq('ticket_id', ticketId)
-      .order('created_at', { ascending: true });
+    let url = `${SUPABASE_URL}/rest/v1/ticket_messages?ticket_id=eq.${ticketId}&order=created_at.asc`;
 
     // Only include internal notes if specifically requested (for staff)
     if (includeInternal !== 'true') {
-      query = query.eq('is_internal', false);
+      url += '&is_internal=eq.false';
     }
 
-    const { data: messages, error } = await query;
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error('Failed to fetch messages');
-    }
+    const messages = await response.json();
 
     const formattedMessages = (messages || []).map(msg => ({
       id: msg.id,

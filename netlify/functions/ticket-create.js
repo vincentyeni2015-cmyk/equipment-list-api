@@ -1,19 +1,12 @@
 /**
  * ticket-create.js
- * Netlify Function to create new support tickets
- * 
- * Endpoint: POST /.netlify/functions/ticket-create
+ * Netlify Function to create a new support ticket
+ * Uses Supabase REST API directly (no SDK needed)
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
-// CORS headers
 const headers = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -22,7 +15,6 @@ const headers = {
 };
 
 exports.handler = async (event) => {
-  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
@@ -36,10 +28,24 @@ exports.handler = async (event) => {
   }
 
   try {
-    const data = JSON.parse(event.body);
-    
+    const body = JSON.parse(event.body);
+    const {
+      customerId,
+      customerEmail,
+      customerName,
+      type,
+      priority = 'normal',
+      subject,
+      description,
+      orderNumber,
+      returnReason,
+      equipmentId,
+      equipmentName,
+      partNumber
+    } = body;
+
     // Validate required fields
-    if (!data.customerId || !data.type || !data.subject || !data.description) {
+    if (!customerId || !type || !subject || !description) {
       return {
         statusCode: 400,
         headers,
@@ -50,69 +56,75 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate ticket number (sequential, based on count)
-    const { count } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true });
+    // Get next ticket number
+    const countResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/support_tickets?select=ticket_number&order=ticket_number.desc&limit=1`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
     
-    const ticketNumber = 1001 + (count || 0);
+    const countData = await countResponse.json();
+    const nextTicketNumber = countData.length > 0 ? countData[0].ticket_number + 1 : 1001;
 
-    // Create ticket record
+    // Create ticket
     const ticketData = {
-      id: generateId(),
-      ticket_number: ticketNumber,
-      customer_id: data.customerId.toString(),
-      customer_email: data.customerEmail || null,
-      customer_name: data.customerName || null,
-      type: data.type,
-      priority: data.priority || 'normal',
+      id: 'tkt_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+      ticket_number: nextTicketNumber,
+      customer_id: customerId.toString(),
+      customer_email: customerEmail || null,
+      customer_name: customerName || null,
+      type: type,
+      priority: priority,
       status: 'Open',
-      subject: data.subject,
-      description: data.description,
-      order_number: data.orderNumber || null,
-      return_reason: data.returnReason || null,
-      equipment_id: data.equipmentId || null,
-      equipment_name: data.equipmentName || null,
-      part_number: data.partNumber || null,
+      subject: subject.trim(),
+      description: description.trim(),
+      order_number: orderNumber || null,
+      return_reason: returnReason || null,
+      equipment_id: equipmentId || null,
+      equipment_name: equipmentName || null,
+      part_number: partNumber || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    const { data: ticket, error } = await supabase
-      .from('support_tickets')
-      .insert([ticketData])
-      .select()
-      .single();
+    const createResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/support_tickets`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(ticketData)
+      }
+    );
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error('Failed to create ticket');
+    if (!createResponse.ok) {
+      const errorData = await createResponse.json();
+      console.error('Supabase error:', errorData);
+      throw new Error(errorData.message || 'Failed to create ticket');
     }
 
-    // Format response
-    const responseTicket = {
-      id: ticket.id,
-      ticketNumber: ticket.ticket_number,
-      customerId: ticket.customer_id,
-      customerEmail: ticket.customer_email,
-      customerName: ticket.customer_name,
-      type: ticket.type,
-      priority: ticket.priority,
-      status: ticket.status,
-      subject: ticket.subject,
-      description: ticket.description,
-      orderNumber: ticket.order_number,
-      createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at
-    };
+    const newTicket = await createResponse.json();
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        ticket: responseTicket,
-        message: `Ticket #${ticketNumber} created successfully`
+        ticket: {
+          id: newTicket[0].id,
+          ticketNumber: newTicket[0].ticket_number,
+          status: newTicket[0].status,
+          subject: newTicket[0].subject,
+          createdAt: newTicket[0].created_at
+        }
       })
     };
 
@@ -128,8 +140,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
-// Generate unique ID
-function generateId() {
-  return 'tkt_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-}

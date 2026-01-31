@@ -1,16 +1,11 @@
 /**
  * ticket-get.js
- * Netlify Function to get tickets for a specific customer
- * 
- * Endpoint: GET /.netlify/functions/ticket-get?customerId=123&limit=10
+ * Netlify Function to get tickets for a customer
+ * Uses Supabase REST API directly (no SDK needed)
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -37,13 +32,19 @@ exports.handler = async (event) => {
 
     // If specific ticket ID requested
     if (ticketId) {
-      const { data: ticket, error } = await supabase
-        .from('support_tickets')
-        .select('*')
-        .eq('id', ticketId)
-        .single();
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/support_tickets?id=eq.${ticketId}`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          }
+        }
+      );
 
-      if (error || !ticket) {
+      const data = await response.json();
+      
+      if (!data || data.length === 0) {
         return {
           statusCode: 404,
           headers,
@@ -54,10 +55,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ 
-          success: true, 
-          ticket: formatTicket(ticket) 
-        })
+        body: JSON.stringify({ success: true, ticket: formatTicket(data[0]) })
       };
     }
 
@@ -70,36 +68,32 @@ exports.handler = async (event) => {
       };
     }
 
-    let query = supabase
-      .from('support_tickets')
-      .select('*')
-      .eq('customer_id', customerId.toString())
-      .order('created_at', { ascending: false });
-
+    let url = `${SUPABASE_URL}/rest/v1/support_tickets?customer_id=eq.${customerId}&order=created_at.desc`;
+    
     if (status) {
-      query = query.eq('status', status);
+      url += `&status=eq.${status}`;
     }
-
+    
     if (limit) {
-      query = query.limit(parseInt(limit));
+      url += `&limit=${limit}`;
     }
 
-    const { data: tickets, error } = await query;
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error('Failed to fetch tickets');
-    }
-
-    const formattedTickets = (tickets || []).map(formatTicket);
+    const tickets = await response.json();
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        tickets: formattedTickets,
-        count: formattedTickets.length
+        tickets: (tickets || []).map(formatTicket),
+        count: tickets.length
       })
     };
 

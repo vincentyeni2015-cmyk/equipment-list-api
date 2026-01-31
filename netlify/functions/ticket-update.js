@@ -1,16 +1,11 @@
 /**
  * ticket-update.js
- * Netlify Function to update ticket status, priority, or other fields
- * 
- * Endpoint: POST /.netlify/functions/ticket-update
+ * Netlify Function to update ticket status/priority
+ * Uses Supabase REST API directly (no SDK needed)
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -48,13 +43,19 @@ exports.handler = async (event) => {
     }
 
     // Verify ticket exists
-    const { data: existingTicket, error: fetchError } = await supabase
-      .from('support_tickets')
-      .select('*')
-      .eq('id', ticketId)
-      .single();
+    const checkResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/support_tickets?id=eq.${ticketId}`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
 
-    if (fetchError || !existingTicket) {
+    const existingTicket = await checkResponse.json();
+    
+    if (!existingTicket || existingTicket.length === 0) {
       return {
         statusCode: 404,
         headers,
@@ -81,7 +82,6 @@ exports.handler = async (event) => {
       }
       updateData.status = status;
 
-      // Set resolved_at timestamp when marking as resolved
       if (status === 'Resolved' || status === 'Closed') {
         updateData.resolved_at = new Date().toISOString();
       }
@@ -109,17 +109,27 @@ exports.handler = async (event) => {
     }
 
     // Update the ticket
-    const { data: updatedTicket, error: updateError } = await supabase
-      .from('support_tickets')
-      .update(updateData)
-      .eq('id', ticketId)
-      .select()
-      .single();
+    const updateResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/support_tickets?id=eq.${ticketId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(updateData)
+      }
+    );
 
-    if (updateError) {
-      console.error('Supabase error:', updateError);
+    if (!updateResponse.ok) {
+      const errorData = await updateResponse.json();
+      console.error('Supabase error:', errorData);
       throw new Error('Failed to update ticket');
     }
+
+    const updatedTicket = await updateResponse.json();
 
     return {
       statusCode: 200,
@@ -127,14 +137,11 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         ticket: {
-          id: updatedTicket.id,
-          ticketNumber: updatedTicket.ticket_number,
-          status: updatedTicket.status,
-          priority: updatedTicket.priority,
-          assignedTo: updatedTicket.assigned_to,
-          assignedName: updatedTicket.assigned_name,
-          updatedAt: updatedTicket.updated_at,
-          resolvedAt: updatedTicket.resolved_at
+          id: updatedTicket[0].id,
+          ticketNumber: updatedTicket[0].ticket_number,
+          status: updatedTicket[0].status,
+          priority: updatedTicket[0].priority,
+          updatedAt: updatedTicket[0].updated_at
         }
       })
     };

@@ -1,16 +1,11 @@
 /**
  * ticket-admin-list.js
  * Netlify Function to get all tickets for admin panel
- * 
- * Endpoint: GET /.netlify/functions/ticket-admin-list
+ * Uses Supabase REST API directly (no SDK needed)
  */
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -35,34 +30,33 @@ exports.handler = async (event) => {
   try {
     const { status, type, priority, page = 1, limit = 50 } = event.queryStringParameters || {};
 
-    let query = supabase
-      .from('support_tickets')
-      .select('*')
-      .order('created_at', { ascending: false });
+    let url = `${SUPABASE_URL}/rest/v1/support_tickets?order=created_at.desc`;
 
     // Apply filters
     if (status) {
-      query = query.eq('status', status);
+      url += `&status=eq.${encodeURIComponent(status)}`;
     }
-
     if (type) {
-      query = query.eq('type', type);
+      url += `&type=eq.${encodeURIComponent(type)}`;
     }
-
     if (priority) {
-      query = query.eq('priority', priority);
+      url += `&priority=eq.${encodeURIComponent(priority)}`;
     }
 
     // Pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query = query.range(offset, offset + parseInt(limit) - 1);
+    url += `&offset=${offset}&limit=${limit}`;
 
-    const { data: tickets, error, count } = await query;
+    const response = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'count=exact'
+      }
+    });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      throw new Error('Failed to fetch tickets');
-    }
+    const tickets = await response.json();
+    const totalCount = response.headers.get('content-range')?.split('/')[1] || tickets.length;
 
     const formattedTickets = (tickets || []).map(ticket => ({
       id: ticket.id,
@@ -87,6 +81,7 @@ exports.handler = async (event) => {
         success: true,
         tickets: formattedTickets,
         count: formattedTickets.length,
+        total: parseInt(totalCount),
         page: parseInt(page),
         limit: parseInt(limit)
       })
