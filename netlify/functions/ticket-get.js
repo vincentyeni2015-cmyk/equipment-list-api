@@ -145,3 +145,4 @@ function formatTicket(ticket) {
     updatedAt: ticket.updated_at
   };
 }
+
