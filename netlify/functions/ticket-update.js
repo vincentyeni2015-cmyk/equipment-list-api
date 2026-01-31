@@ -139,6 +139,34 @@ exports.handler = async (event) => {
 
     const updatedTicket = await updateResponse.json();
 
+    // Send email notification for status changes (Resolved/Closed)
+    if (status && (status === 'Resolved' || status === 'Closed')) {
+      const ticket = existingTicket[0];
+      if (ticket.customer_email) {
+        try {
+          const notifyUrl = process.env.URL 
+            ? `${process.env.URL}/.netlify/functions/ticket-notify`
+            : 'https://unrivaled-zuccutto-bdbd4b.netlify.app/.netlify/functions/ticket-notify';
+          
+          await fetch(notifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'status_changed',
+              customerEmail: ticket.customer_email,
+              customerName: ticket.customer_name,
+              ticketNumber: ticket.ticket_number,
+              ticketSubject: ticket.subject,
+              newStatus: status
+            })
+          });
+          console.log('Status change notification sent to:', ticket.customer_email);
+        } catch (emailError) {
+          console.error('Email notification failed:', emailError);
+        }
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
