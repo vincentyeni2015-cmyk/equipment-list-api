@@ -39,10 +39,13 @@ exports.handler = async (event) => {
       ticketSubject,
       message,
       newStatus,
-      staffName
+      staffName,
+      adminEmail,
+      ticketType,
+      ticketDescription
     } = JSON.parse(event.body);
 
-    if (!customerEmail || !ticketNumber) {
+    if ((!customerEmail && !adminEmail) || !ticketNumber) {
       return {
         statusCode: 400,
         headers,
@@ -64,22 +67,31 @@ exports.handler = async (event) => {
       };
     }
 
-    let subject, htmlContent;
+    let subject, htmlContent, toEmail;
 
     switch (type) {
       case 'admin_reply':
+        toEmail = customerEmail;
         subject = `Re: Ticket #${ticketNumber} - ${ticketSubject}`;
         htmlContent = generateReplyEmail({ customerName, ticketNumber, ticketSubject, message, staffName, STORE_NAME, STORE_URL });
         break;
 
       case 'status_changed':
+        toEmail = customerEmail;
         subject = `Ticket #${ticketNumber} - Status Updated to ${newStatus}`;
         htmlContent = generateStatusEmail({ customerName, ticketNumber, ticketSubject, newStatus, STORE_NAME, STORE_URL });
         break;
 
       case 'ticket_created':
+        toEmail = customerEmail;
         subject = `Ticket #${ticketNumber} Received - ${ticketSubject}`;
         htmlContent = generateConfirmationEmail({ customerName, ticketNumber, ticketSubject, STORE_NAME, STORE_URL });
+        break;
+
+      case 'new_ticket_admin':
+        toEmail = adminEmail;
+        subject = `🎫 New Ticket #${ticketNumber} - ${ticketSubject}`;
+        htmlContent = generateAdminNotificationEmail({ customerName, customerEmail, ticketNumber, ticketSubject, ticketType, ticketDescription, STORE_NAME, STORE_URL });
         break;
 
       default:
@@ -98,7 +110,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         from: `${STORE_NAME} Support <${FROM_EMAIL}>`,
-        to: customerEmail,
+        to: toEmail,
         subject: subject,
         html: htmlContent
       })
@@ -223,6 +235,68 @@ function generateConfirmationEmail({ customerName, ticketNumber, ticketSubject, 
       <div style="text-align:center;">
         <a href="${STORE_URL}/pages/support-tickets" style="display:inline-block;background:#F7B910;color:#000;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;">View Your Tickets</a>
       </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function generateAdminNotificationEmail({ customerName, customerEmail, ticketNumber, ticketSubject, ticketType, ticketDescription, STORE_NAME, STORE_URL }) {
+  const typeLabels = {
+    'return': 'Return Request',
+    'parts': 'Parts Request', 
+    'equipment-help': 'Equipment Help',
+    'order-issue': 'Order Issue',
+    'general': 'General Inquiry'
+  };
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="background:#1e293b;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+      <h1 style="margin:0;color:#F7B910;font-size:24px;">🎫 New Support Ticket</h1>
+    </div>
+    <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+      <div style="background:#fef3c7;border-radius:8px;padding:16px;margin-bottom:24px;border-left:4px solid #F7B910;">
+        <p style="margin:0 0 4px;font-size:14px;color:#92400e;font-weight:600;">New ticket submitted</p>
+        <p style="margin:0;font-size:24px;color:#1f2937;font-weight:700;">#${ticketNumber}</p>
+      </div>
+      
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;width:120px;">Customer:</td>
+          <td style="padding:8px 0;color:#1f2937;font-size:14px;font-weight:500;">${customerName || 'N/A'}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Email:</td>
+          <td style="padding:8px 0;color:#1f2937;font-size:14px;">${customerEmail || 'N/A'}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;">Type:</td>
+          <td style="padding:8px 0;color:#1f2937;font-size:14px;">
+            <span style="background:#F7B910;color:#000;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">${typeLabels[ticketType] || ticketType}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#6b7280;font-size:14px;vertical-align:top;">Subject:</td>
+          <td style="padding:8px 0;color:#1f2937;font-size:14px;font-weight:600;">${ticketSubject}</td>
+        </tr>
+      </table>
+      
+      <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:24px;">
+        <p style="margin:0 0 8px;font-size:12px;color:#6b7280;text-transform:uppercase;font-weight:600;">Message</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.6;white-space:pre-wrap;">${ticketDescription}</p>
+      </div>
+      
+      <div style="text-align:center;">
+        <a href="${STORE_URL}/pages/support-admin" style="display:inline-block;background:#1e293b;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;">View in Admin Panel</a>
+      </div>
+    </div>
+    <div style="text-align:center;padding:24px;">
+      <p style="color:#9ca3af;font-size:13px;margin:0;">${STORE_NAME} Support System</p>
     </div>
   </div>
 </body>
