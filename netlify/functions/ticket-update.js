@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { ticketId, status, priority, assignedTo, assignedName, archived } = body;
+    const { ticketId, status, priority, assignedTo, assignedName, customerArchived, adminArchived } = body;
 
     if (!ticketId) {
       return {
@@ -108,9 +108,12 @@ exports.handler = async (event) => {
       updateData.assigned_name = assignedName || null;
     }
 
-    // Set archived status
-    if (archived !== undefined) {
-      updateData.archived = archived;
+    // Set archived status (separate for customer and admin)
+    if (customerArchived !== undefined) {
+      updateData.customer_archived = customerArchived;
+    }
+    if (adminArchived !== undefined) {
+      updateData.admin_archived = adminArchived;
     }
 
     // Update the ticket

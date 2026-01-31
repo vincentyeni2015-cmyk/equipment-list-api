@@ -139,7 +139,8 @@ function formatTicket(ticket) {
     equipmentName: ticket.equipment_name,
     partNumber: ticket.part_number,
     attachments: attachments,
-    archived: ticket.archived || false,
+    customerArchived: ticket.customer_archived || false,
+    adminArchived: ticket.admin_archived || false,
     createdAt: ticket.created_at,
     updatedAt: ticket.updated_at
   };

@@ -83,7 +83,8 @@ exports.handler = async (event) => {
         description: ticket.description,
         orderNumber: ticket.order_number,
         attachments: attachments,
-        archived: ticket.archived || false,
+        customerArchived: ticket.customer_archived || false,
+        adminArchived: ticket.admin_archived || false,
         createdAt: ticket.created_at,
         updatedAt: ticket.updated_at
       };
