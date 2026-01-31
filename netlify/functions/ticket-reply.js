@@ -30,16 +30,16 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body);
-    const { ticketId, message, authorId, authorName, authorEmail, isStaff, isInternal } = body;
+    const { ticketId, message, authorId, authorName, authorEmail, isStaff, isInternal, attachments } = body;
 
     // Validate required fields
-    if (!ticketId || !message) {
+    if (!ticketId || (!message && (!attachments || attachments.length === 0))) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
           success: false, 
-          error: 'ticketId and message are required' 
+          error: 'ticketId and message (or attachments) are required' 
         })
       };
     }
@@ -71,12 +71,13 @@ exports.handler = async (event) => {
     const messageData = {
       id: 'msg_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
       ticket_id: ticketId,
-      message: message.trim(),
+      message: (message || '').trim() || '(Attachment)',
       author_id: authorId || null,
       author_name: authorName || 'Customer',
       author_email: authorEmail || null,
       is_staff: isStaff || false,
       is_internal: isInternal || false,
+      attachments: attachments && attachments.length > 0 ? JSON.stringify(attachments) : null,
       created_at: new Date().toISOString()
     };
 
@@ -181,3 +182,4 @@ exports.handler = async (event) => {
     };
   }
 };
+
