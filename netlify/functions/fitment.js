@@ -1,13 +1,40 @@
 const fs = require('fs');
 const path = require('path');
 
+// Proper CSV parser (RFC 4180): fields wrapped in double quotes may contain
+// commas and newlines, and "" inside a quoted field is a literal quote.
+// This keeps values like "A93K11001 & Above, AC2P11001 & Above" in ONE column.
+function parseCsvRows(text) {
+  const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (s[i + 1] === '"') { field += '"'; i++; } // escaped quote
+        else { inQuotes = false; }
+      } else { field += c; }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\n') {
+      row.push(field); rows.push(row); row = []; field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
 // Normalize header names so "SKU", "Sub-Model", "Variant 2" etc. all map cleanly
 function parseCsv(text) {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
-  if (!lines.length) return [];
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
-  return lines.slice(1).map(line => {
-    const cells = line.split(',');
+  const rows = parseCsvRows(text).filter(r => r.some(c => String(c).trim() !== ''));
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+  return rows.slice(1).map(cells => {
     const row = {};
     headers.forEach((h, i) => { row[h] = (cells[i] || '').trim(); });
     return row;
@@ -45,6 +72,32 @@ exports.handler = async (event) => {
 
     const q = (event && event.queryStringParameters) || {};
     const has = k => q[k] !== undefined && q[k] !== null && String(q[k]).trim() !== '';
+
+    // ====== SKU MODE: ?sku=A,B,C -> return this product's machines from both CSVs ======
+    // Used by the product-page compatibility table to merge CSV fitment with metafields.
+    if (has('sku') && !has('category') && !has('make') && !has('model') && !has('year')) {
+      const wantSet = new Set(
+        String(q.sku).split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+      );
+      const matchSku = r => wantSet.has((r.sku || '').trim().toLowerCase());
+
+      const heavyDuty = dedupe(
+        hd.filter(matchSku).map(r => ({
+          make: r.make || '', type: r.type || '', submodel: r.submodel || '',
+          model: r.model || '', variant: r.variant || '', variant2: r.variant2 || ''
+        })),
+        r => [r.make, r.type, r.submodel, r.model, r.variant, r.variant2].join('||')
+      );
+      const automotive = dedupe(
+        at.filter(matchSku).map(r => ({
+          year: r.year || '', make: r.make || '', model: r.model || '',
+          trim: r.trim || '', engine: r.engine || ''
+        })),
+        r => [r.year, r.make, r.model, r.trim, r.engine].join('||')
+      );
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ heavyDuty, automotive }) };
+    }
 
     // ====== SEARCH MODE: machine params present -> return matching SKUs ======
     if (has('category') || has('make') || has('model') || has('year')) {
