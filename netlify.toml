@@ -4,6 +4,7 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["netlify/functions/*.csv"]
 
 [[redirects]]
   from = "/api/*"
