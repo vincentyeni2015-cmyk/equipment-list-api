@@ -20,6 +20,18 @@ function dedupe(rows, keyFn) {
   return out;
 }
 
+// Dedupe machine specs but keep the list of SKUs that map to each spec
+function dedupeWithSkus(rows, keyFn, specFn) {
+  const map = {};
+  rows.forEach(r => {
+    const k = keyFn(r);
+    if (!map[k]) map[k] = Object.assign(specFn(r), { skus: [] });
+    const sku = (r.sku || '').trim();
+    if (sku && map[k].skus.indexOf(sku) === -1) map[k].skus.push(sku);
+  });
+  return Object.keys(map).map(k => map[k]);
+}
+
 const CORS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
@@ -65,19 +77,21 @@ exports.handler = async (event) => {
     }
 
     // ====== DROPDOWN MODE: no params -> return deduped machine specs ======
-    const heavyDuty = dedupe(
-      hd.map(r => ({
+    const heavyDuty = dedupeWithSkus(
+      hd,
+      r => [r.make, r.type, r.submodel, r.model, r.variant, r.variant2].join('||'),
+      r => ({
         make: r.make || '', type: r.type || '', submodel: r.submodel || '',
         model: r.model || '', variant: r.variant || '', variant2: r.variant2 || ''
-      })),
-      r => [r.make, r.type, r.submodel, r.model, r.variant, r.variant2].join('||')
+      })
     );
-    const automotive = dedupe(
-      at.map(r => ({
+    const automotive = dedupeWithSkus(
+      at,
+      r => [r.year, r.make, r.model, r.trim, r.engine].join('||'),
+      r => ({
         year: r.year || '', make: r.make || '', model: r.model || '',
         trim: r.trim || '', engine: r.engine || ''
-      })),
-      r => [r.year, r.make, r.model, r.trim, r.engine].join('||')
+      })
     );
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ heavyDuty, automotive }) };
