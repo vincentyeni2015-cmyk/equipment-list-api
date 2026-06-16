@@ -73,6 +73,29 @@ exports.handler = async (event) => {
     const q = (event && event.queryStringParameters) || {};
     const has = k => q[k] !== undefined && q[k] !== null && String(q[k]).trim() !== '';
 
+    // ====== CROSS-REFERENCE MODE: ?xref=A,B,C -> OEM cross references for these SKUs ======
+    // Reads cross-reference.csv (columns: Union SKU, OEM Brand, OEM Part #).
+    if (has('xref')) {
+      let xr = [];
+      try {
+        xr = parseCsv(fs.readFileSync(path.join(__dirname, 'cross-reference.csv'), 'utf8'));
+      } catch (e) { xr = []; } // file may not exist yet
+      const wantSet = new Set(
+        String(q.xref).split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+      );
+      const getSku = r => (r.unionsku || r.sku || '').trim().toLowerCase();
+      const crossRef = dedupe(
+        xr.filter(r => wantSet.has(getSku(r)))
+          .map(r => ({
+            brand: (r.oembrand || r.brand || '').trim(),
+            part: (r.oempart || r.oempartnumber || r.part || '').trim()
+          }))
+          .filter(r => r.brand || r.part),
+        r => [r.brand, r.part].join('||')
+      );
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ crossRef }) };
+    }
+
     // ====== SKU MODE: ?sku=A,B,C -> return this product's machines from both CSVs ======
     // Used by the product-page compatibility table to merge CSV fitment with metafields.
     if (has('sku') && !has('category') && !has('make') && !has('model') && !has('year')) {
