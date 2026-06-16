@@ -73,6 +73,19 @@ exports.handler = async (event) => {
     const q = (event && event.queryStringParameters) || {};
     const has = k => q[k] !== undefined && q[k] !== null && String(q[k]).trim() !== '';
 
+    // ====== CROSS-REFERENCE (ALL): ?xrefall=1 -> every cross reference WITH its Union SKU ======
+    // Used by the smart search so OEM brands / part numbers become searchable.
+    if (has('xrefall')) {
+      let xr = [];
+      try { xr = parseCsv(fs.readFileSync(path.join(__dirname, 'cross-reference.csv'), 'utf8')); } catch (e) { xr = []; }
+      const crossRef = xr.map(r => ({
+        sku: (r.unionsku || r.sku || '').trim(),
+        brand: (r.oembrand || r.brand || '').trim(),
+        part: (r.oempart || r.oempartnumber || r.part || '').trim()
+      })).filter(r => r.sku && (r.brand || r.part));
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ crossRef }) };
+    }
+
     // ====== CROSS-REFERENCE MODE: ?xref=A,B,C -> OEM cross references for these SKUs ======
     // Reads cross-reference.csv (columns: Union SKU, OEM Brand, OEM Part #).
     if (has('xref')) {
