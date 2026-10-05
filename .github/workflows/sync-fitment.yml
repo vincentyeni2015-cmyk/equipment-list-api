@@ -1,0 +1,45 @@
+name: Sync fitment to Shopify
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**/heavy-duty.csv'
+      - '**/automotive-trucks.csv'
+      - '**/cross-reference.csv'
+      - 'scripts/sync-fitment.mjs'
+  schedule:
+    - cron: '17 9 * * *'   # daily, picks up products added in Shopify after the last CSV change
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (compare only, write nothing)'
+        type: boolean
+        default: false
+      force:
+        description: 'Allow a run that removes data from more than 25% of variants'
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-fitment
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sync
+        run: node scripts/sync-fitment.mjs
+        env:
+          SHOPIFY_SHOP: ${{ secrets.SHOPIFY_SHOP }}
+          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          FORCE: ${{ inputs.force && '1' || '' }}
